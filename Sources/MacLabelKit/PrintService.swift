@@ -132,7 +132,7 @@ public enum PrintService {
             renders.append(result)
         }
         let job = LWClassicJob(
-            labels: renders.map(\.bitmap), labelLengthLines: geometry.lengthLines,
+            labels: renders.map(\.bitmap), labelLengthLines: roll.kind == .continuous ? nil : geometry.lengthLines,
             quality: quality, density: density, twinRoll: request.twinRoll
         )
         return (renders, job)

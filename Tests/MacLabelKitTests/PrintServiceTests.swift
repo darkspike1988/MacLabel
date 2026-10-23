@@ -153,3 +153,12 @@ final class Counter: @unchecked Sendable {
     #expect(CSVError.unterminatedQuote(line: 3).text(bundle: de) == "CSV: Anführungszeichen in Zeile 3 nicht geschlossen.")
     #expect(CSVError.unterminatedQuote(line: 3).text(bundle: en) == "CSV: unterminated quote on line 3.")
 }
+
+@Test func continuousRollSendsFFFFLength() throws {
+    let cont = try #require(MediaCatalog.bundled.roll(sku: "30270"))
+    #expect(cont.kind == .continuous)
+    let job = try PrintService.prepare(.init(contents: [text("x")], roll: cont, model: lw450, continuousLengthMM: 50))
+    #expect(contains(job.bytes, [0x1B, 0x4C, 0xFF, 0xFF]))
+    #expect(job.renders[0].bitmap.height > 0)
+    #expect(!contains(try PrintService.prepare(req(1)).bytes, [0x1B, 0x4C, 0xFF, 0xFF]))
+}
