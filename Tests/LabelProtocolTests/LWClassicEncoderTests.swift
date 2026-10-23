@@ -4,9 +4,11 @@ import Testing
 @Suite struct LWClassicEncoderTests {
     @Test func headerTextNormal() {
         let h = LWClassicEncoder.jobHeader(.init(labels: [], labelLengthLines: 100, quality: .text, density: .normal))
-        #expect(h.count == 156 + 2 + 4 + 3 + 2 + 2)
+        #expect(h.count == 156 + 4 + 3 + 2 + 2)
+        #expect(h.count == 167)
+        #expect(Array(h[156..<160]) == [0x1B,0x51,0,0]) // no ESC @ in a normal header (Ruling 29)
         #expect(Array(h.prefix(156)) == Array(repeating: 0x1B, count: 156))
-        #expect(Array(h.suffix(13)) == [0x1B,0x40, 0x1B,0x51,0,0, 0x1B,0x42,0, 0x1B,0x68, 0x1B,0x65])
+        #expect(Array(h.suffix(11)) == [0x1B,0x51,0,0, 0x1B,0x42,0, 0x1B,0x68, 0x1B,0x65])
     }
     @Test func headerGraphicsDarkTwinLeft() {
         let h = LWClassicEncoder.jobHeader(.init(labels: [], labelLengthLines: 1, quality: .graphics, density: .dark, twinRoll: .left))
@@ -59,5 +61,6 @@ import Testing
         #expect(LWClassicEncoder.versionRequest == [0x1B,0x56])
         #expect(LWClassicEncoder.betweenLabels == [0x1B,0x47])
         #expect(LWClassicEncoder.endOfJob == [0x1B,0x45])
+        #expect(LWClassicEncoder.reset == [0x1B,0x40])
     }
 }

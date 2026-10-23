@@ -88,7 +88,7 @@ private func contains(_ hay: [UInt8], _ needle: [UInt8]) -> Bool {
         try await PrintService.print(req(3), using: t)
     }
     let w = await t.written
-    #expect(Array(w.suffix(158)) == LWClassicEncoder.resync + [0x1B, 0x40])
+    #expect(Array(w.suffix(158)) == LWClassicEncoder.resync + LWClassicEncoder.reset)
 }
 @Test func happyPathEndsWithEndOfJobAndReportsProgress() async throws {
     let t = ScriptedTransport(statuses: [0x03, 0x03, 0x03])
@@ -136,7 +136,7 @@ actor CancelAwareTransport: PrinterTransport {
     task.cancel()
     await #expect(throws: CancellationError.self) { try await task.value }
     let w = await t.written
-    #expect(w.last == LWClassicEncoder.resync + [0x1B, 0x40])
+    #expect(w.last == LWClassicEncoder.resync + LWClassicEncoder.reset)
 }
 
 final class Counter: @unchecked Sendable {

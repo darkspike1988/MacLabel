@@ -27,10 +27,11 @@ public enum LWClassicEncoder {
     public static let endOfJob: [UInt8] = [0x1B, 0x45]
     public static let statusRequest: [UInt8] = [0x1B, 0x41]
     public static let versionRequest: [UInt8] = [0x1B, 0x56]
+    /// `ESC @`: only used after an aborted job (with `resync`); never part of a normal header.
+    public static let reset: [UInt8] = [0x1B, 0x40]
 
     public static func jobHeader(_ job: LWClassicJob) -> [UInt8] {
         var out = resync
-        out += [0x1B, 0x40]
         out += [0x1B, 0x51, 0x00, 0x00]
         out += [0x1B, 0x42, 0x00]
         out += [0x1B, job.quality == .text ? 0x68 : 0x69]

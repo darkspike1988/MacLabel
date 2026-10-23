@@ -167,7 +167,7 @@ public enum PrintService {
             if headerSent {
                 // Discard partial data; resync + ESC @ never moves paper. Unstructured task:
                 // it must not inherit this task's cancellation, or the write would fail at once.
-                await Task { try? await transport.write(LWClassicEncoder.resync + [0x1B, 0x40]) }.value
+                await Task { try? await transport.write(LWClassicEncoder.resync + LWClassicEncoder.reset) }.value
             }
             if let error = error as? TransportError { throw PrintError.transport(error) }
             throw error
