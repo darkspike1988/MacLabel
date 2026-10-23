@@ -30,7 +30,7 @@ MacLabel ist Open Source (MIT), gibt keine Daten an Dritte weiter und macht kein
 swift build -c release
 ```
 
-Das Programm liegt danach unter `.build/release/maclabel`.
+Das Programm liegt danach unter `.build/release/maclabel`. Es braucht seine Ressourcen-Ordner (`*.bundle`, z. B. die Rollen-Datenbank und die Übersetzungen) im selben Verzeichnis: Beim Kopieren an einen anderen Ort `.build/release/MacLabelKit_*.bundle` mitkopieren.
 
 ## CLI-Beispiele
 
@@ -45,7 +45,9 @@ maclabel print --roll 11354 --copies 2 --counter 1 "Box {n}"
 maclabel print --roll 11354 --csv adressen.csv "{name}\n{ort}"
 ```
 
-Vor dem echten Druck hilft `--dry-run` (PNG-Vorschau oder `.bin` mit den Druckerbytes).
+Vor dem echten Druck hilft `--dry-run` (PNG-Vorschau oder `.bin` mit den Druckerbytes). Mit `--rotate upright|cw|ccw|180` lässt sich die Leserichtung erzwingen.
+
+Ein mit Ctrl-C abgebrochener Druck lässt den Drucker eventuell mitten im Etikett zurück; der nächste Auftrag beginnt mit einer Resynchronisierung und druckt wieder ausgerichtet.
 
 ## Rollen-Datenbank
 

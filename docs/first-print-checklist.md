@@ -51,7 +51,7 @@ Wenn falsch: Text steht auf dem Kopf oder liest sich von unten nach oben → Mat
 swift run maclabel print --roll 11354 --layout qr --caption "MacLabel" "https://example.com/maclabel"
 ```
 
-Erwartet: Scharfer, quadratischer QR-Code mit Beschriftung darunter. Mit dem Handy scannen; die URL wird erkannt.
+Erwartet: Scharfer, quadratischer QR-Code links, die Beschriftung „MacLabel“ rechts daneben (mit deutlichem Abstand zum Code). Mit dem Handy scannen; die URL wird erkannt.
 Wenn falsch: Scan schlägt fehl oder Code verzerrt → Auflösung (600 lpi) und Skalierung in `LabelGeometry.headTransform()` (`Sources/LabelRender/LabelGeometry.swift`) prüfen. Bei Vertikalversatz `originFeedDots`. Bei zu blassem Druck `--density dark` testen.
 
 ## 5. EAN-13-Scan
@@ -72,7 +72,72 @@ swift run maclabel print --roll 11354 --copies 2 --counter 1 "Box {n}"
 Erwartet: Zwei Etiketten, „Box 1“ und „Box 2“. Zwischen den Etiketten wird ESC G (Kurzvorschub) gesendet, es kommt kein leeres Etikett heraus und das Papier springt nicht verzogen vor.
 Wenn falsch: Leeres Zusatzetikett, Versatz ab dem zweiten Etikett oder Zähler falsch → Meldung zurückmelden (Ablauf in `LabelKit`/`LWClassicEncoder`); Versatz ggf. `originFeedDots`.
 
-## 7. Papier leer (optional)
+## 7. Zwei Kopien als QR-Code (Grafikmodus, 600 lpi)
+
+```
+swift run maclabel print --roll 11354 --layout qr --caption "Kopie" --copies 2 "https://example.com/maclabel"
+```
+
+Erwartet: Zwei gleiche Etiketten; das zweite sitzt genauso auf dem Etikett wie das erste (kein Versatz nach oben/unten, kein angeschnittener Code). Beide Codes lassen sich scannen.
+Wenn falsch: Versatz nur beim zweiten Etikett → Längenangabe `ESC L` im Grafikmodus bzw. `ESC G` zwischen den Etiketten (`LWClassicEncoder`); Foto beider Etiketten zurückmelden.
+
+## 8. Zwei Aufträge direkt hintereinander
+
+```
+swift run maclabel print --roll 11354 "Auftrag 1" && swift run maclabel print --roll 11354 "Auftrag 2"
+```
+
+Erwartet: Genau zwei Etiketten, kein leeres Etikett dazwischen. Der Rückvorschub nach dem Ende des ersten Auftrags (`ESC E`) ist in Ordnung; „Auftrag 2“ sitzt richtig auf seinem Etikett.
+Wenn falsch: Leeres Etikett oder Versatz beim zweiten Auftrag → Meldung mit Foto zurückmelden (Kopf `jobHeader` bzw. `endOfJob` in `LWClassicEncoder`).
+
+## 9. Endlosrolle (nur falls Endlosrolle vorhanden)
+
+Nur mit einer Endlosrolle (z. B. 30270); sonst überspringen.
+
+```
+swift run maclabel print --roll 30270 --length 50 "Endlos 50 mm"
+```
+
+Erwartet: Ein etwa 50 mm langer Abschnitt mit dem Text, kein Suchen nach einer Etikettenlücke, kein langer Leervorschub.
+Wenn falsch: Drucker sucht eine Lücke oder schiebt lange Papier nach → Länge `ESC L FF FF` für Endlosrollen (`PrintService`) prüfen; gemessene Länge zurückmelden.
+
+## 10. Drucker belegt
+
+DYMO Connect öffnen, dort einen Druck starten und sofort danach:
+
+```
+swift run maclabel status
+echo $?
+```
+
+Erwartet: Meldung „Drucker wird gerade von einer anderen App benutzt.“ und Exit-Code 75. Kein Hängen, kein Absturz.
+Wenn falsch: Anderer Exit-Code, andere Meldung oder Hängen → Ausgabe im Wortlaut zurückmelden (`USBPrinterConnection.mapOpenError`).
+
+## 11. Abgebrochener Auftrag
+
+```
+swift run maclabel print --roll 11354 --copies 3 --counter 1 "Abbruch {n}"
+```
+
+Während des Drucks (nach dem ersten Etikett) Ctrl-C drücken. Danach:
+
+```
+swift run maclabel print --roll 11354 "Nach Abbruch"
+```
+
+Erwartet: Der zweite Befehl druckt „Nach Abbruch“ richtig ausgerichtet auf ein eigenes Etikett (der nächste Auftrag beginnt mit einer Resynchronisierung).
+Wenn falsch: Versatz, Datenmüll oder halbes Etikett → Foto und Ausgabe zurückmelden.
+
+## 12. Langer Code128 (~30 Zeichen)
+
+```
+swift run maclabel print --roll 11354 --layout barcode "MACLABEL-TEST-0123456789-ABCDE"
+```
+
+Erwartet: Entweder wird der Barcode gedruckt und lässt sich mit Handy oder Scanner lesen, oder der Druck wird mit „passt nicht“ (Exit-Code 65) abgelehnt. Ein gedruckter, aber nicht lesbarer Barcode ist ein Fehler.
+Wenn falsch: Gedruckt, aber nicht lesbar → Mindest-Modulbreite in `BarcodeLayout` und Dichte (`--density dark`) zurückmelden.
+
+## 13. Papier leer (optional)
 
 Rolle entfernen bzw. Papier leer laufen lassen, dann:
 
@@ -87,7 +152,8 @@ Wenn falsch: Hängt der Aufruf oder fehlt die Meldung → Verhalten und Statusby
 ## Ergebnis zurückmelden
 
 Bitte dem Entwickler mitteilen:
-- Pro Schritt: richtig / falsch, bei falsch kurze Beschreibung oder Foto (Etikett quer gehalten, Pfeilrichtung sichtbar).
+- Pro Schritt: richtig / falsch, bei falsch kurze Beschreibung oder Foto (Etikett so gehalten, dass die 57-mm-Kante unten liegt, Pfeilrichtung sichtbar).
+- Bei jedem Fehldruck: denselben Befehl zusätzlich mit `--dry-run fehldruck.bin` ausführen und die `.bin`-Datei mitschicken (die Druckerbytes zur Diagnose; es wird dabei nichts gedruckt).
 - Bei Versatz: ungefähr wie viele Millimeter und in welche Richtung.
 - Ausgabe von `maclabel status` und `maclabel printers`.
 - Ob QR-Code und EAN-13 mit dem Handy gelesen wurden.
