@@ -46,7 +46,9 @@ MacLabel ist eine native macOS-App (Swift/SwiftUI) für DYMO-LabelWriter-Etikett
 ## 3. Rahmenbedingungen
 
 - macOS 26+ (Entwicklung auf macOS 27, Xcode 27.1, Swift 6.4, Strict Concurrency).
-- Öffentliches GitHub-Repo `darkspike1988/MacLabel`, MIT-Lizenz.
+- Öffentliches GitHub-Repo `darkspike1988/MacLabel`, MIT-Lizenz (Open Source).
+- **Keine Datenweitergabe an Dritte (Auftraggeber, verbindlich):** keine Telemetrie, keine Analytics, keine Crash-Reporter von Drittanbietern, keine Cloud, keine Konten, keine Online-Abfragen. Die App bekommt **kein** Netzwerk-Entitlement (`com.apple.security.network.client` fehlt in der Sandbox), sodass ausgehende Verbindungen technisch unmöglich sind. Updates kommen ausschließlich über Homebrew bzw. später über GitHub Releases, die der Nutzer selbst anstößt. Kontakte, CSV-Daten und Etiketteninhalte verlassen den Mac nie.
+- **Eine einheitliche App (Auftraggeber):** `MacLabel.app` enthält Fenster, Menüleiste, Dienst und App Intents. Das CLI liegt in `Contents/MacOS/maclabel` und wird per Menüpunkt bzw. Homebrew-Cask verlinkt.
 - **Rechtliches zur Rollen-Datenbank:** DYMOs `SKUs.xml`/`Papers.xml` werden **nicht** veröffentlicht. MacLabel enthält eine eigene JSON-Datenbank mit **Fakten** (Artikelnummer, Maße, bedruckbarer Bereich, Eckenradius, Art, Material, Region) in eigenem Format, erzeugt durch ein Skript `tools/import-dymo-media`. Das Skript liest die Daten aus einer lokal installierten DYMO-Connect-App (Interoperabilitätszweck). Übersetzte Produkttexte, Bilder und Suchbegriffe werden nicht übernommen. Eigene Namen und Suchbegriffe pflegt MacLabel selbst.
 - Das Protokoll ist aus öffentlich dokumentierten Quellen bekannt: LW450 Technical Reference Manual, DYMOs GPL-CUPS-Treiber. Die REA-Analyse bestätigt es. MacLabel implementiert es neu und kopiert keinen GPL-Code (MIT-Lizenz).
 - Kein Testdruck auf der echten Hardware ohne den Auftraggeber. Encoder werden gegen Golden-Byte-Fixtures getestet, die aus der Spezifikation abgeleitet sind.
