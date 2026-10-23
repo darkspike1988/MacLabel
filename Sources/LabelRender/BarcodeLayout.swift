@@ -4,6 +4,8 @@ import LabelProtocol
 /// 1D barcode: bars perpendicular to reading x, written as whole head pixels.
 enum BarcodeLayout {
     static let quietModules = 10
+    /// Smallest module (X-dimension) in 300-dpi dots.
+    static let minModuleDots = 2
     /// Share of the reading height used by the human-readable text.
     static let textBand = 0.2
 
@@ -17,9 +19,13 @@ enum BarcodeLayout {
         }
         let grid = ReadingPixels(geometry)
         let total = modules.count + 2 * quietModules
+        // Ruling 30: a module is at least `minModuleDots` dots (≈0.17 mm) wide physically, i.e. 4 lines
+        // when reading x lies on the 600-lpi feed axis. Narrower codes do not scan reliably: render at the
+        // minimum and report overflow instead.
+        let minModule = minModuleDots * grid.xUnitsPerDot
         var module = grid.width / total
         var overflow = false
-        if module < 1 { module = 1; overflow = true }
+        if module < minModule { module = minModule; overflow = true }
 
         var barHeight = grid.height
         var bitmap = MonochromeBitmap(width: geometry.headDots, height: geometry.lengthLines)

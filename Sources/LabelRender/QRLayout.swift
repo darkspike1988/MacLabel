@@ -4,6 +4,8 @@ import LabelProtocol
 /// QR code: physically square modules, quiet zone of two modules, caption to the right.
 enum QRLayout {
     static let quietModules = 2
+    /// Smallest module in 300-dpi dots.
+    static let minModuleDots = 3
 
     static func render(_ content: QRContent, geometry: LabelGeometry) throws -> (MonochromeBitmap, overflow: Bool) {
         let matrix: [[Bool]]
@@ -13,7 +15,8 @@ enum QRLayout {
         // Module size in 300-dpi dots; on the feed axis it is that many dots' worth of lines.
         var module = min(grid.width / grid.xUnitsPerDot, grid.height / grid.yUnitsPerDot) / total
         var overflow = false
-        if module < 1 { module = 1; overflow = true }
+        // Ruling 30: modules of at least `minModuleDots` dots (and as many dots' worth of lines).
+        if module < minModuleDots { module = minModuleDots; overflow = true }
         let mx = module * grid.xUnitsPerDot, my = module * grid.yUnitsPerDot
         let side = (x: total * mx, y: total * my)
 
