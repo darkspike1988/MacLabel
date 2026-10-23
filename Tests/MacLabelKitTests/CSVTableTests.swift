@@ -51,3 +51,9 @@ import Testing
     #expect(t.headers == ["Name", "Ort"])
     #expect(t.rows[0]["Ort"] == "X")
 }
+@Test func excelTrailingEmptyRowsSkipped() throws {
+    let t = try CSVTable(parsing: "Name;Ort\r\nA;B\r\n;;\r\n;\r\n")
+    #expect(t.rows.count == 1)
+    #expect(t.rows[0] == ["Name": "A", "Ort": "B"])
+    #expect(try CSVTable(parsing: "Name;Ort\r\n \t; \r\nC;\r\n").rows == [["Name": "C", "Ort": ""]])
+}

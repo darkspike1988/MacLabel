@@ -23,7 +23,8 @@ extension CSVError: LocalizedError {
 ///   occurrences outside quotes. If that line has none, the file is single-column and is never split. Ties prefer `;`, then `,`, then tab.
 /// - Header names are trimmed. With duplicate header names the later column wins.
 /// - Rows with fewer fields than headers get `""` for the missing ones; extra fields are ignored.
-/// - Blank lines are ignored.
+/// - Blank lines and data rows whose fields are all empty or whitespace (Excel's `;;;`) are ignored,
+///   unless the row contains a quoted field (an explicit `""` is kept).
 public struct CSVTable: Sendable, Equatable {
     public let headers: [String]
     public let rows: [[String: String]]
@@ -90,9 +91,12 @@ public struct CSVTable: Sendable, Equatable {
         }
         func endRecord() {
             endField()
-            // Ignore blank lines (a single empty unquoted field).
+            // Ignore blank lines (a single empty unquoted field) and, after the header, data rows
+            // whose unquoted fields are all empty or whitespace (Excel's ";;;" trailing rows).
             let blank = fields.count == 1 && fields[0].isEmpty && !recordHadQuote
-            if !blank { records.append(fields) }
+            let emptyDataRow = !records.isEmpty && !recordHadQuote
+                && fields.allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            if !blank && !emptyDataRow { records.append(fields) }
             fields = []
             recordHadQuote = false
         }
