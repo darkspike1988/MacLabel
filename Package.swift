@@ -34,7 +34,7 @@ let package = Package(
         ),
         .testTarget(name: "LabelProtocolTests", dependencies: ["LabelProtocol"]),
         .testTarget(name: "LabelMediaTests", dependencies: ["LabelMedia"]),
-        .testTarget(name: "LabelRenderTests", dependencies: ["LabelRender"]),
+        .testTarget(name: "LabelRenderTests", dependencies: ["LabelRender", "LabelMedia", "LabelProtocol"]),
         .testTarget(name: "LabelTransportTests", dependencies: ["LabelTransport"]),
         .testTarget(name: "MacLabelKitTests", dependencies: ["MacLabelKit"]),
         .testTarget(name: "maclabelCLITests", dependencies: ["maclabel"]),
