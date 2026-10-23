@@ -1,1 +1,1651 @@
-{"version":1,"rolls":[]}
+{
+ "rolls": [
+  {
+   "acrossDots": 639,
+   "acrossMM": 54.1,
+   "cornerRadiusMM": 0,
+   "feedDots": 261,
+   "feedMM": 22.1,
+   "id": "11351",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 54 × 22 mm",
+   "nameEN": "Label 54 × 22 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 227,
+    "originAcrossDots": 0,
+    "originFeedDots": 18,
+    "widthDots": 628
+   },
+   "regions": [],
+   "skus": [
+    "11351",
+    "30299"
+   ]
+  },
+  {
+   "acrossDots": 300,
+   "acrossMM": 25.4,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 639,
+   "feedMM": 54.1,
+   "id": "11352",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Rücksendeadresse",
+   "nameEN": "Return address",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 593,
+    "originAcrossDots": 17,
+    "originFeedDots": 27,
+    "widthDots": 271
+   },
+   "regions": [
+    "EMEA",
+    "Global",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "11352",
+    "30336",
+    "1738541",
+    "1976411",
+    "2112283",
+    "2187918",
+    "S0722520"
+   ]
+  },
+  {
+   "acrossDots": 300,
+   "acrossMM": 25.4,
+   "cornerRadiusMM": 0,
+   "feedDots": 300,
+   "feedMM": 25.4,
+   "id": "11353",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 25 × 25 mm",
+   "nameEN": "Label 25 × 25 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 229,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 278
+   },
+   "regions": [],
+   "skus": [
+    "11353"
+   ]
+  },
+  {
+   "acrossDots": 675,
+   "acrossMM": 57.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 375,
+   "feedMM": 31.8,
+   "id": "11354",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Vielzweck",
+   "nameEN": "Multi-purpose",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 339,
+    "originAcrossDots": 12,
+    "originFeedDots": 18,
+    "widthDots": 651
+   },
+   "regions": [
+    "EMEA",
+    "Global",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "11354",
+    "30334",
+    "1933084",
+    "2112289",
+    "S0722540"
+   ]
+  },
+  {
+   "acrossDots": 225,
+   "acrossMM": 19.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 600,
+   "feedMM": 50.8,
+   "id": "11355",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Vielzweck klein",
+   "nameEN": "Small multi-purpose",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 514,
+    "originAcrossDots": 17,
+    "originFeedDots": 68,
+    "widthDots": 196
+   },
+   "regions": [
+    "EMEA",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "11355",
+    "30330",
+    "30578",
+    "S0722550"
+   ]
+  },
+  {
+   "acrossDots": 488,
+   "acrossMM": 41.3,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "11356",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Namensschild",
+   "nameEN": "Name badge",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 963,
+    "originAcrossDots": 17,
+    "originFeedDots": 69,
+    "widthDots": 459
+   },
+   "regions": [
+    "EMEA"
+   ],
+   "skus": [
+    "11356",
+    "S0722560"
+   ]
+  },
+  {
+   "acrossDots": 693,
+   "acrossMM": 58.7,
+   "cornerRadiusMM": 0,
+   "feedDots": 780,
+   "feedMM": 66.0,
+   "id": "14681",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 66 × 59 mm",
+   "nameEN": "Label 66 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 639,
+    "originAcrossDots": 17,
+    "originFeedDots": 70,
+    "widthDots": 655
+   },
+   "regions": [],
+   "skus": [
+    "14681",
+    "30854"
+   ]
+  },
+  {
+   "acrossDots": 1233,
+   "acrossMM": 104.4,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1884,
+   "feedMM": 159.5,
+   "id": "1744907",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 160 × 104 mm",
+   "nameEN": "Label 160 × 104 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1800,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 1200
+   },
+   "regions": [
+    "EMEA",
+    "Global",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "1744907",
+    "1933086",
+    "2112287"
+   ]
+  },
+  {
+   "acrossDots": 300,
+   "acrossMM": 25.4,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "1933081",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 89 × 25 mm",
+   "nameEN": "Label 89 × 25 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 963,
+    "originAcrossDots": 15,
+    "originFeedDots": 69,
+    "widthDots": 270
+   },
+   "regions": [
+    "EMEA",
+    "Global"
+   ],
+   "skus": [
+    "1933081",
+    "2112285"
+   ]
+  },
+  {
+   "acrossDots": 703,
+   "acrossMM": 59.5,
+   "cornerRadiusMM": 0,
+   "feedDots": 600,
+   "feedMM": 50.8,
+   "id": "1933089",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 60 × 51 mm",
+   "nameEN": "Label 60 × 51 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 570,
+    "originAcrossDots": 66,
+    "originFeedDots": 18,
+    "widthDots": 619
+   },
+   "regions": [],
+   "skus": [
+    "1933089"
+   ]
+  },
+  {
+   "acrossDots": 1205,
+   "acrossMM": 102.0,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 2480,
+   "feedMM": 210.0,
+   "id": "2166659",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 210 × 102 mm",
+   "nameEN": "Label 210 × 102 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 2369,
+    "originAcrossDots": 37,
+    "originFeedDots": 56,
+    "widthDots": 1131
+   },
+   "regions": [
+    "EMEA"
+   ],
+   "skus": [
+    "2166659"
+   ]
+  },
+  {
+   "acrossDots": 693,
+   "acrossMM": 58.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1200,
+   "feedMM": 101.6,
+   "id": "2166837",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 102 × 59 mm",
+   "nameEN": "Label 102 × 59 mm",
+   "offsetDots": 43,
+   "printable": {
+    "lengthDots": 1112,
+    "originAcrossDots": 52,
+    "originFeedDots": 70,
+    "widthDots": 583
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "2166837",
+    "2166839",
+    "2168827",
+    "2168828",
+    "2168921"
+   ]
+  },
+  {
+   "acrossDots": 600,
+   "acrossMM": 50.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "2168830",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 89 × 51 mm",
+   "nameEN": "Label 89 × 51 mm",
+   "offsetDots": 21,
+   "printable": {
+    "lengthDots": 920,
+    "originAcrossDots": 55,
+    "originFeedDots": 112,
+    "widthDots": 490
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "2168830"
+   ]
+  },
+  {
+   "acrossDots": 638,
+   "acrossMM": 54.0,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 825,
+   "feedMM": 69.8,
+   "id": "2187328",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 70 × 54 mm",
+   "nameEN": "Label 70 × 54 mm",
+   "offsetDots": 56,
+   "printable": {
+    "lengthDots": 744,
+    "originAcrossDots": 18,
+    "originFeedDots": 69,
+    "widthDots": 560
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "2187328"
+   ]
+  },
+  {
+   "acrossDots": 638,
+   "acrossMM": 54.0,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 825,
+   "feedMM": 69.8,
+   "id": "2187329",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 70 × 54 mm",
+   "nameEN": "Label 70 × 54 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 744,
+    "originAcrossDots": 18,
+    "originFeedDots": 69,
+    "widthDots": 604
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "2187329"
+   ]
+  },
+  {
+   "acrossDots": 225,
+   "acrossMM": 19.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 600,
+   "feedMM": 50.8,
+   "id": "2191207",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 51 × 19 mm",
+   "nameEN": "Label 51 × 19 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 490,
+    "originAcrossDots": 17,
+    "originFeedDots": 92,
+    "widthDots": 196
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "2191207"
+   ]
+  },
+  {
+   "acrossDots": 375,
+   "acrossMM": 31.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1313,
+   "feedMM": 111.1,
+   "id": "2201249",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 111 × 32 mm",
+   "nameEN": "Label 111 × 32 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1225,
+    "originAcrossDots": 18,
+    "originFeedDots": 69,
+    "widthDots": 345
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "2201249"
+   ]
+  },
+  {
+   "acrossDots": 327,
+   "acrossMM": 27.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "30251",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Adresse",
+   "nameEN": "Address",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 963,
+    "originAcrossDots": 18,
+    "originFeedDots": 69,
+    "widthDots": 299
+   },
+   "regions": [
+    "EMEA",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30251",
+    "30252",
+    "30254",
+    "30320",
+    "30340",
+    "30572",
+    "99010",
+    "1760754",
+    "1982991",
+    "1983173",
+    "S0722370",
+    "S0722380"
+   ]
+  },
+  {
+   "acrossDots": 693,
+   "acrossMM": 58.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "30253",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 89 × 59 mm",
+   "nameEN": "Label 89 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 964,
+    "originAcrossDots": 17,
+    "originFeedDots": 68,
+    "widthDots": 664
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30253"
+   ]
+  },
+  {
+   "acrossDots": 693,
+   "acrossMM": 58.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1200,
+   "feedMM": 101.6,
+   "id": "30256",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 102 × 59 mm",
+   "nameEN": "Label 102 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1112,
+    "originAcrossDots": 17,
+    "originFeedDots": 70,
+    "widthDots": 665
+   },
+   "regions": [
+    "EMEA",
+    "Global",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30256",
+    "30364",
+    "30857",
+    "30911",
+    "1760756",
+    "1763982",
+    "1933088",
+    "2112290",
+    "S0719190"
+   ]
+  },
+  {
+   "acrossDots": 639,
+   "acrossMM": 54.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 825,
+   "feedMM": 69.8,
+   "id": "30258",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 70 × 54 mm",
+   "nameEN": "Label 70 × 54 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 741,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 609
+   },
+   "regions": [
+    "EMEA",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30258",
+    "30324",
+    "99015",
+    "S0722440"
+   ]
+  },
+  {
+   "acrossDots": 732,
+   "acrossMM": 62.0,
+   "cornerRadiusMM": 0,
+   "feedDots": null,
+   "feedMM": null,
+   "id": "30270",
+   "kind": "continuous",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Endlos 62 mm",
+   "nameEN": "Continuous 62 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": null,
+    "originAcrossDots": 35,
+    "originFeedDots": 0,
+    "widthDots": 662
+   },
+   "regions": [
+    "EMEA",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30270",
+    "2191636"
+   ]
+  },
+  {
+   "acrossDots": 339,
+   "acrossMM": 28.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1029,
+   "feedMM": 87.1,
+   "id": "30277",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 87 × 29 mm",
+   "nameEN": "Label 87 × 29 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 953,
+    "originAcrossDots": 18,
+    "originFeedDots": 60,
+    "widthDots": 308
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30277"
+   ]
+  },
+  {
+   "acrossDots": 423,
+   "acrossMM": 35.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1044,
+   "feedMM": 88.4,
+   "id": "30321",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Adresse groß",
+   "nameEN": "Large address",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 961,
+    "originAcrossDots": 18,
+    "originFeedDots": 67,
+    "widthDots": 392
+   },
+   "regions": [
+    "EMEA",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30321",
+    "99012",
+    "1983172",
+    "S0722400",
+    "S0722410"
+   ]
+  },
+  {
+   "acrossDots": 639,
+   "acrossMM": 54.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1191,
+   "feedMM": 100.8,
+   "id": "30323",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Versand / Namensschild",
+   "nameEN": "Shipping / name badge",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1109,
+    "originAcrossDots": 18,
+    "originFeedDots": 64,
+    "widthDots": 608
+   },
+   "regions": [
+    "EMEA",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30323",
+    "30573",
+    "99014",
+    "2133382",
+    "2133383",
+    "2133399",
+    "2133400",
+    "S0722430"
+   ]
+  },
+  {
+   "acrossDots": 225,
+   "acrossMM": 19.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1761,
+   "feedMM": 149.1,
+   "id": "30325",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 149 × 19 mm",
+   "nameEN": "Label 149 × 19 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1679,
+    "originAcrossDots": 12,
+    "originFeedDots": 66,
+    "widthDots": 201
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30325"
+   ]
+  },
+  {
+   "acrossDots": 543,
+   "acrossMM": 46.0,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 918,
+   "feedMM": 77.7,
+   "id": "30326",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 78 × 46 mm",
+   "nameEN": "Label 78 × 46 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 835,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 515
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30326"
+   ]
+  },
+  {
+   "acrossDots": 234,
+   "acrossMM": 19.8,
+   "cornerRadiusMM": 0,
+   "feedDots": 1029,
+   "feedMM": 87.1,
+   "id": "30327",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 87 × 20 mm",
+   "nameEN": "Label 87 × 20 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 947,
+    "originAcrossDots": 0,
+    "originFeedDots": 66,
+    "widthDots": 223
+   },
+   "regions": [],
+   "skus": [
+    "30327"
+   ]
+  },
+  {
+   "acrossDots": 300,
+   "acrossMM": 25.4,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 300,
+   "feedMM": 25.4,
+   "id": "30332",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 25 × 25 mm",
+   "nameEN": "Label 25 × 25 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 252,
+    "originAcrossDots": 17,
+    "originFeedDots": 30,
+    "widthDots": 271
+   },
+   "regions": [
+    "EMEA",
+    "Global",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30332",
+    "30333",
+    "1933083",
+    "2112286",
+    "S0722530",
+    "S0929120"
+   ]
+  },
+  {
+   "acrossDots": 303,
+   "acrossMM": 25.7,
+   "cornerRadiusMM": 0,
+   "feedDots": 357,
+   "feedMM": 30.2,
+   "id": "30335",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 30 × 26 mm",
+   "nameEN": "Label 30 × 26 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 320,
+    "originAcrossDots": 0,
+    "originFeedDots": 18,
+    "widthDots": 292
+   },
+   "regions": [],
+   "skus": [
+    "30335"
+   ]
+  },
+  {
+   "acrossDots": 489,
+   "acrossMM": 41.4,
+   "cornerRadiusMM": 0,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "30337",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 89 × 41 mm",
+   "nameEN": "Label 89 × 41 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1050,
+    "originAcrossDots": 0,
+    "originFeedDots": 0,
+    "widthDots": 484
+   },
+   "regions": [],
+   "skus": [
+    "30337"
+   ]
+  },
+  {
+   "acrossDots": 225,
+   "acrossMM": 19.1,
+   "cornerRadiusMM": 0,
+   "feedDots": 843,
+   "feedMM": 71.4,
+   "id": "30339",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 71 × 19 mm",
+   "nameEN": "Label 71 × 19 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 760,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 196
+   },
+   "regions": [],
+   "skus": [
+    "30339"
+   ]
+  },
+  {
+   "acrossDots": 225,
+   "acrossMM": 19.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 750,
+   "feedMM": 63.5,
+   "id": "30345",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 64 × 19 mm",
+   "nameEN": "Label 64 × 19 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 664,
+    "originAcrossDots": 17,
+    "originFeedDots": 68,
+    "widthDots": 196
+   },
+   "regions": [
+    "EMEA",
+    "Global",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30345",
+    "1738595",
+    "1933085",
+    "2112284"
+   ]
+  },
+  {
+   "acrossDots": 150,
+   "acrossMM": 12.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 561,
+   "feedMM": 47.5,
+   "id": "30346",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 48 × 13 mm",
+   "nameEN": "Label 48 × 13 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 477,
+    "originAcrossDots": 17,
+    "originFeedDots": 68,
+    "widthDots": 121
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30346"
+   ]
+  },
+  {
+   "acrossDots": 300,
+   "acrossMM": 25.4,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 450,
+   "feedMM": 38.1,
+   "id": "30347",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 38 × 25 mm",
+   "nameEN": "Label 38 × 25 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 364,
+    "originAcrossDots": 17,
+    "originFeedDots": 68,
+    "widthDots": 271
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30347"
+   ]
+  },
+  {
+   "acrossDots": 270,
+   "acrossMM": 22.9,
+   "cornerRadiusMM": 0,
+   "feedDots": 375,
+   "feedMM": 31.8,
+   "id": "30348",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 32 × 23 mm",
+   "nameEN": "Label 32 × 23 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 289,
+    "originAcrossDots": 21,
+    "originFeedDots": 68,
+    "widthDots": 237
+   },
+   "regions": [],
+   "skus": [
+    "30348"
+   ]
+  },
+  {
+   "acrossDots": 696,
+   "acrossMM": 58.9,
+   "cornerRadiusMM": 0,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "30365",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 89 × 59 mm",
+   "nameEN": "Label 89 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 964,
+    "originAcrossDots": 17,
+    "originFeedDots": 68,
+    "widthDots": 664
+   },
+   "regions": [],
+   "skus": [
+    "30365"
+   ]
+  },
+  {
+   "acrossDots": 600,
+   "acrossMM": 50.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 702,
+   "feedMM": 59.4,
+   "id": "30370",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 59 × 51 mm",
+   "nameEN": "Label 59 × 51 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 619,
+    "originAcrossDots": 18,
+    "originFeedDots": 66,
+    "widthDots": 570
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30370"
+   ]
+  },
+  {
+   "acrossDots": 294,
+   "acrossMM": 24.9,
+   "cornerRadiusMM": 0,
+   "feedDots": 600,
+   "feedMM": 50.8,
+   "id": "30373",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 51 × 25 mm",
+   "nameEN": "Label 51 × 25 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 226,
+    "originAcrossDots": 0,
+    "originFeedDots": 18,
+    "widthDots": 281
+   },
+   "regions": [],
+   "skus": [
+    "30373"
+   ]
+  },
+  {
+   "acrossDots": 600,
+   "acrossMM": 50.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1050,
+   "feedMM": 88.9,
+   "id": "30374",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 89 × 51 mm",
+   "nameEN": "Label 89 × 51 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 920,
+    "originAcrossDots": 36,
+    "originFeedDots": 112,
+    "widthDots": 552
+   },
+   "regions": [
+    "EMEA",
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30374",
+    "S0929100"
+   ]
+  },
+  {
+   "acrossDots": 330,
+   "acrossMM": 27.9,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 600,
+   "feedMM": 50.8,
+   "id": "30376",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 51 × 28 mm",
+   "nameEN": "Label 51 × 28 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 488,
+    "originAcrossDots": 36,
+    "originFeedDots": 94,
+    "widthDots": 282
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30376"
+   ]
+  },
+  {
+   "acrossDots": 675,
+   "acrossMM": 57.1,
+   "cornerRadiusMM": 0,
+   "feedDots": 2100,
+   "feedMM": 177.8,
+   "id": "30383",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 178 × 57 mm",
+   "nameEN": "Label 178 × 57 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 2016,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 646
+   },
+   "regions": [],
+   "skus": [
+    "30383"
+   ]
+  },
+  {
+   "acrossDots": 693,
+   "acrossMM": 58.7,
+   "cornerRadiusMM": 0,
+   "feedDots": 2250,
+   "feedMM": 190.5,
+   "id": "30384",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 191 × 59 mm",
+   "nameEN": "Label 191 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 2166,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 665
+   },
+   "regions": [],
+   "skus": [
+    "30384"
+   ]
+  },
+  {
+   "acrossDots": 694,
+   "acrossMM": 58.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 3150,
+   "feedMM": 266.7,
+   "id": "30387",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 267 × 59 mm",
+   "nameEN": "Label 267 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 3066,
+    "originAcrossDots": 18,
+    "originFeedDots": 69,
+    "widthDots": 665
+   },
+   "regions": [
+    "NorthAmerica"
+   ],
+   "skus": [
+    "30387"
+   ]
+  },
+  {
+   "acrossDots": 729,
+   "acrossMM": 61.7,
+   "cornerRadiusMM": 0,
+   "feedDots": 1215,
+   "feedMM": 102.9,
+   "id": "30856",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 103 × 62 mm",
+   "nameEN": "Label 103 × 62 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1085,
+    "originAcrossDots": 0,
+    "originFeedDots": 112,
+    "widthDots": 672
+   },
+   "regions": [],
+   "skus": [
+    "30856"
+   ]
+  },
+  {
+   "acrossDots": 462,
+   "acrossMM": 39.1,
+   "cornerRadiusMM": 0,
+   "feedDots": 525,
+   "feedMM": 44.5,
+   "id": "30886",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 45 × 39 mm",
+   "nameEN": "Label 45 × 39 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 384,
+    "originAcrossDots": 18,
+    "originFeedDots": 66,
+    "widthDots": 408
+   },
+   "regions": [],
+   "skus": [
+    "30886"
+   ]
+  },
+  {
+   "acrossDots": 261,
+   "acrossMM": 22.1,
+   "cornerRadiusMM": 0,
+   "feedDots": 1743,
+   "feedMM": 147.6,
+   "id": "99016",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 148 × 22 mm",
+   "nameEN": "Label 148 × 22 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1658,
+    "originAcrossDots": 0,
+    "originFeedDots": 68,
+    "widthDots": 248
+   },
+   "regions": [],
+   "skus": [
+    "99016"
+   ]
+  },
+  {
+   "acrossDots": 150,
+   "acrossMM": 12.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 600,
+   "feedMM": 50.8,
+   "id": "99017",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Hängeregister",
+   "nameEN": "Suspension file",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 515,
+    "originAcrossDots": 12,
+    "originFeedDots": 67,
+    "widthDots": 126
+   },
+   "regions": [
+    "EMEA"
+   ],
+   "skus": [
+    "99017",
+    "S0722460"
+   ]
+  },
+  {
+   "acrossDots": 450,
+   "acrossMM": 38.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 2244,
+   "feedMM": 190.0,
+   "id": "99018",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 190 × 38 mm",
+   "nameEN": "Label 190 × 38 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 2160,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 420
+   },
+   "regions": [
+    "EMEA"
+   ],
+   "skus": [
+    "99018",
+    "S0722470"
+   ]
+  },
+  {
+   "acrossDots": 693,
+   "acrossMM": 58.7,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 2244,
+   "feedMM": 190.0,
+   "id": "99019",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 190 × 59 mm",
+   "nameEN": "Label 190 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 2160,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 665
+   },
+   "regions": [
+    "EMEA",
+    "Global"
+   ],
+   "skus": [
+    "99019",
+    "1933087",
+    "2112288",
+    "S0722480"
+   ]
+  },
+  {
+   "acrossDots": 223,
+   "acrossMM": 18.9,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 600,
+   "feedMM": 50.8,
+   "id": "FG0001658047",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 51 × 19 mm",
+   "nameEN": "Label 51 × 19 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 483,
+    "originAcrossDots": 18,
+    "originFeedDots": 99,
+    "widthDots": 197
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "FG0001658047"
+   ]
+  },
+  {
+   "acrossDots": 600,
+   "acrossMM": 50.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 300,
+   "feedMM": 25.4,
+   "id": "LWCS-501-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 51 × 25 mm",
+   "nameEN": "Label 51 × 25 mm",
+   "offsetDots": 24,
+   "printable": {
+    "lengthDots": 270,
+    "originAcrossDots": 24,
+    "originFeedDots": 18,
+    "widthDots": 552
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-501-WH"
+   ]
+  },
+  {
+   "acrossDots": 600,
+   "acrossMM": 50.8,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 228,
+   "feedMM": 19.3,
+   "id": "LWCS-502-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 51 × 19 mm",
+   "nameEN": "Label 51 × 19 mm",
+   "offsetDots": 18,
+   "printable": {
+    "lengthDots": 68,
+    "originAcrossDots": 22,
+    "originFeedDots": 4,
+    "widthDots": 570
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-502-WH"
+   ]
+  },
+  {
+   "acrossDots": 450,
+   "acrossMM": 38.1,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 225,
+   "feedMM": 19.1,
+   "id": "LWCS-503-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 38 × 19 mm",
+   "nameEN": "Label 38 × 19 mm",
+   "offsetDots": 18,
+   "printable": {
+    "lengthDots": 203,
+    "originAcrossDots": 18,
+    "originFeedDots": 14,
+    "widthDots": 414
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-503-WH"
+   ]
+  },
+  {
+   "acrossDots": 300,
+   "acrossMM": 25.4,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 300,
+   "feedMM": 25.4,
+   "id": "LWCS-504-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 25 × 25 mm",
+   "nameEN": "Label 25 × 25 mm",
+   "offsetDots": 12,
+   "printable": {
+    "lengthDots": 276,
+    "originAcrossDots": 18,
+    "originFeedDots": 12,
+    "widthDots": 270
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-504-WH"
+   ]
+  },
+  {
+   "acrossDots": 306,
+   "acrossMM": 25.9,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 245,
+   "feedMM": 20.8,
+   "id": "LWCS-505-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 26 × 21 mm",
+   "nameEN": "Label 26 × 21 mm",
+   "offsetDots": 21,
+   "printable": {
+    "lengthDots": 129,
+    "originAcrossDots": 18,
+    "originFeedDots": 17,
+    "widthDots": 272
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-505-WH"
+   ]
+  },
+  {
+   "acrossDots": 443,
+   "acrossMM": 37.5,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 225,
+   "feedMM": 19.0,
+   "id": "LWCS-506-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 38 × 19 mm",
+   "nameEN": "Label 38 × 19 mm",
+   "offsetDots": 29,
+   "printable": {
+    "lengthDots": 130,
+    "originAcrossDots": 55,
+    "originFeedDots": 2,
+    "widthDots": 385
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-506-WH"
+   ]
+  },
+  {
+   "acrossDots": 501,
+   "acrossMM": 42.5,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 188,
+   "feedMM": 15.9,
+   "id": "LWCS-507-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 43 × 16 mm",
+   "nameEN": "Label 43 × 16 mm",
+   "offsetDots": 27,
+   "printable": {
+    "lengthDots": 165,
+    "originAcrossDots": 8,
+    "originFeedDots": 14,
+    "widthDots": 450
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-507-WH"
+   ]
+  },
+  {
+   "acrossDots": 338,
+   "acrossMM": 28.6,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 150,
+   "feedMM": 12.7,
+   "id": "LWCS-510-WH",
+   "kind": "dieCut",
+   "material": "durable",
+   "minHeadDots": 672,
+   "nameDE": "Etikett 29 × 13 mm",
+   "nameEN": "Label 29 × 13 mm",
+   "offsetDots": 8,
+   "printable": {
+    "lengthDots": 145,
+    "originAcrossDots": 0,
+    "originFeedDots": 3,
+    "widthDots": 338
+   },
+   "regions": [
+    "Global"
+   ],
+   "skus": [
+    "LWCS-510-WH"
+   ]
+  },
+  {
+   "acrossDots": 1233,
+   "acrossMM": 104.4,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 1883,
+   "feedMM": 159.4,
+   "id": "S0904980",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Versand groß (4XL)",
+   "nameEN": "Large shipping (4XL)",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 1800,
+    "originAcrossDots": 17,
+    "originFeedDots": 66,
+    "widthDots": 1200
+   },
+   "regions": [
+    "EMEA"
+   ],
+   "skus": [
+    "S0904980"
+   ]
+  },
+  {
+   "acrossDots": 1200,
+   "acrossMM": 101.6,
+   "cornerRadiusMM": 1.3,
+   "feedDots": 694,
+   "feedMM": 58.8,
+   "id": "S0947420",
+   "kind": "dieCut",
+   "material": "standard",
+   "minHeadDots": 1248,
+   "nameDE": "Etikett 102 × 59 mm",
+   "nameEN": "Label 102 × 59 mm",
+   "offsetDots": 0,
+   "printable": {
+    "lengthDots": 665,
+    "originAcrossDots": 12,
+    "originFeedDots": 12,
+    "widthDots": 1179
+   },
+   "regions": [
+    "EMEA"
+   ],
+   "skus": [
+    "S0947420"
+   ]
+  }
+ ],
+ "version": 1
+}
