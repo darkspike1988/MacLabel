@@ -9,6 +9,8 @@ public enum BarcodeError: Error, Equatable {
     case invalidCharacter(Character)
     case invalidLength(expected: [Int], got: Int)
     case badCheckDigit
+    case payloadTooLong
+    case generationFailed
 }
 
 /// 1D barcode encoder. Modules carry no quiet zone; `true` = bar.

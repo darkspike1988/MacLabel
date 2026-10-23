@@ -56,6 +56,9 @@ import Testing
         #expect(q.count >= 21)
         #expect(q[0][0] && q[0][6] && q[6][0]) // finder pattern corner
     }
+    @Test func qrOversizedPayloadThrows() {
+        #expect(throws: BarcodeError.payloadTooLong) { try QRMatrix.modules(String(repeating: "a", count: 3000)) }
+    }
     @Test func emptyRejected() {
         #expect(throws: BarcodeError.empty) { try Barcode.modules(.code128, "") }
         #expect(throws: BarcodeError.empty) { try QRMatrix.modules("") }
