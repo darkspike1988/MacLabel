@@ -18,6 +18,31 @@ import Testing
         #expect(ink.width > 400) // auto-fit makes it big
     }
 
+    @Test(arguments: ["Keller\r\nBox 3", "Keller\rBox 3", "Keller\u{2028}Box 3"])
+    func otherLineBreaksSplitLikeLF(text: String) throws {
+        let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
+        let lf = try LabelRenderer.render(.text(.init(text: "Keller\nBox 3")), geometry: g).bitmap
+        let other = try LabelRenderer.render(.text(.init(text: text)), geometry: g).bitmap
+        #expect(other == lf)
+        // Two separated ink bands along the feed.
+        let ink = inkBounds(lf)!
+        let blank = (ink.minY...ink.maxY).filter { lf.isRowBlank($0) }
+        #expect(!blank.isEmpty)
+    }
+
+    /// Stacked diacritics and fallback-font glyphs rise above the base font's ascent;
+    /// they must still be fully inside the printable area (or overflow is reported).
+    @Test(arguments: ["\u{C9}\u{302}", "\u{E01}\u{E4C}\u{E48}", "\u{C9}\u{302}\nq\u{327}\u{328}"])
+    func tallGlyphInkIsNotClipped(text: String) throws {
+        let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
+        let res = try LabelRenderer.render(.text(.init(text: text)), geometry: g)
+        #expect(!res.overflow)
+        let ink = inkBounds(res.bitmap)!
+        let r = g.printableRect
+        #expect(ink.minY > Int(r.minY) && ink.maxY < Int(r.maxY) - 1)
+        #expect(ink.minX > Int(r.minX) && ink.maxX < Int(r.maxX) - 1)
+    }
+
     @Test func longTextOverflows() throws {
         let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
         let res = try LabelRenderer.render(.text(.init(text: String(repeating: "Sehr langer Text ", count: 40))), geometry: g)
@@ -54,7 +79,7 @@ import Testing
         #expect(res.preview.width == 672 && res.preview.height == 375)
     }
 
-    @Test func previewMatchesRasterForNone() throws {
+    @Test func previewMatchesRasterForUpright() throws {
         let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
         let res = try LabelRenderer.render(.text(.init(text: "Keller")), geometry: g)
         let a = inkBounds(res.bitmap)!, b = inkBounds(res.preview)!

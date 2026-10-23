@@ -5,7 +5,7 @@ import Testing
 @Suite struct GeometryTests {
     @Test func geometry11354() {
         let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
-        #expect(g.rotation == .none)
+        #expect(g.rotation == .upright)
         #expect(g.lengthLines == 375)
         #expect(Int(g.printableRect.width) == 651)
         #expect(g.printableRect == CGRect(x: 12, y: 18, width: 651, height: 339))
@@ -29,14 +29,13 @@ import Testing
         #expect(g.readingSizePoints.height == 299 * 72.0 / 300)
     }
 
-    // Note: `rotation: .none` would bind to `Optional.none` (= default); spell out the type.
     @Test func explicitRotationOverridesDefault() {
-        #expect(LabelGeometry(roll: r99010, headDots: 672, quality: .text, rotation: ReadingRotation.none).rotation == .none)
+        #expect(LabelGeometry(roll: r99010, headDots: 672, quality: .text, rotation: .upright).rotation == .upright)
     }
 
     @Test func continuousRollUsesLengthAndClampsToHead() {
         let g = LabelGeometry(roll: rContinuous62, headDots: 672, quality: .text)
-        #expect(g.rotation == .none)
+        #expect(g.rotation == .upright)
         #expect(g.lengthLines == Int((50 / 25.4 * 300).rounded()))
         // Ruling 8: x = min(offset + originAcross, headDots - widthDots) = min(35, 10).
         #expect(g.printableRect == CGRect(x: 10, y: 0, width: 662, height: CGFloat(g.lengthLines)))
@@ -44,7 +43,7 @@ import Testing
         #expect(g2.lengthLines == Int((100 / 25.4 * 600).rounded()))
     }
 
-    @Test(arguments: [ReadingRotation.none, .clockwise90, .upsideDown, .counterClockwise90])
+    @Test(arguments: [ReadingRotation.upright, .clockwise90, .upsideDown, .counterClockwise90])
     func headTransformMapsCornersOntoPrintableRect(rotation: ReadingRotation) {
         let g = LabelGeometry(roll: r11354, headDots: 672, quality: .graphics, rotation: rotation)
         let t = g.headTransform()

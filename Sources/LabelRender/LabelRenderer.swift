@@ -78,7 +78,7 @@ public enum LabelRenderer {
             for px in 0..<pw {
                 let (x, line): (Int, Int)
                 switch geometry.rotation {
-                case .none: (x, line) = (x0 + px, py)
+                case .upright: (x, line) = (x0 + px, py)
                 case .clockwise90: (x, line) = (x0 + w - 1 - py, px)
                 case .upsideDown: (x, line) = (x0 + w - 1 - px, lines - 1 - py)
                 case .counterClockwise90: (x, line) = (x0 + py, lines - 1 - px)
