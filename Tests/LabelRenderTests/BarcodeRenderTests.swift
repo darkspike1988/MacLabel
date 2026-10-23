@@ -107,6 +107,12 @@ import Testing
         #expect(ink.minX == Int(g.printableRect.minX) + 2 * m) // quiet zone of two modules
         #expect(ink.maxX > Int(g.printableRect.minX) + (n + 4) * m) // caption to the right
         #expect(qrModuleSize(res.bitmap) == (m, m))
+        // Ruling 31: the caption starts four modules after the symbol (outer quiet zone stays two).
+        let symbolEnd = Int(g.printableRect.minX) + (2 + n) * m
+        let captionStart = (symbolEnd..<res.bitmap.width).first { x in (0..<res.bitmap.height).contains { res.bitmap[x, $0] } }!
+        #expect(captionStart >= symbolEnd + 4 * m)
+        let blank = (symbolEnd..<symbolEnd + 4 * m).allSatisfy { x in !(0..<res.bitmap.height).contains { res.bitmap[x, $0] } }
+        #expect(blank)
     }
 
     @Test(arguments: [nil, "", "  "] as [String?])

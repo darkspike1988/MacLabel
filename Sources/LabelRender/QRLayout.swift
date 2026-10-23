@@ -1,11 +1,14 @@
 import CoreGraphics
 import LabelProtocol
 
-/// QR code: physically square modules, quiet zone of two modules, caption to the right.
+/// QR code: physically square modules, quiet zone of two modules, caption to the right after a
+/// gap of four modules.
 enum QRLayout {
     static let quietModules = 2
     /// Smallest module in 300-dpi dots.
     static let minModuleDots = 3
+    /// Blank modules between the symbol and its caption.
+    static let captionGapModules = 4
 
     static func render(_ content: QRContent, geometry: LabelGeometry) throws -> (MonochromeBitmap, overflow: Bool) {
         let matrix: [[Bool]]
@@ -25,7 +28,8 @@ enum QRLayout {
         let caption = content.caption ?? ""
         if !caption.allSatisfy(\.isWhitespace) {
             originX = 0
-            let box = grid.points(x: min(side.x, grid.width)..<grid.width, y: 0..<grid.height)
+            let captionX = (quietModules + matrix.count + captionGapModules) * mx
+            let box = grid.points(x: min(captionX, grid.width)..<grid.width, y: 0..<grid.height)
             if let text = BarcodeLayout.drawText(caption, in: box, geometry: geometry, alignment: .leading) {
                 bitmap = text.bitmap
                 overflow = overflow || text.overflow
