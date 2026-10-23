@@ -13,3 +13,9 @@ func localizedBundle(preferred: [String]) -> Bundle {
 enum L10n {
     static var bundle: Bundle { localizedBundle(preferred: Locale.preferredLanguages) }
 }
+
+/// Looks up a user-facing string in the kit's catalog (German or English by preferred languages).
+/// Used by the CLI so all texts live in `Localizable.xcstrings`.
+public func localizedString(_ key: String.LocalizationValue) -> String {
+    String(localized: key, bundle: L10n.bundle)
+}

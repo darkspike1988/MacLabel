@@ -1,6 +1,7 @@
 import ArgumentParser
 import Foundation
 import LabelMedia
+import MacLabelKit
 
 struct RollsCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
@@ -19,7 +20,7 @@ struct RollsCommand: ParsableCommand {
         func run() throws {
             let rolls = MediaCatalog.bundled.search(query)
             guard !rolls.isEmpty else {
-                print(CLIText.tr("Keine Treffer.", "No matches."))
+                print(localizedString("No matches."))
                 return
             }
             print(rollTable(rolls))
@@ -31,11 +32,11 @@ func readingSize(_ roll: LabelRoll) -> String {
     let size = roll.readingSizeMM
     let w = Int(size.width.rounded())
     if let h = size.height { return "\(w) × \(Int(h.rounded())) mm" }
-    return CLIText.tr("\(w) mm endlos", "\(w) mm continuous")
+    return localizedString("\(w) mm continuous")
 }
 
 func rollTable(_ rolls: [LabelRoll]) -> String {
-    let header = ["ID", "Name", CLIText.tr("Maße", "Size"), CLIText.tr("Artikelnummern", "Article numbers")]
+    let header = ["ID", "Name", localizedString("Size"), localizedString("Article numbers")]
     let rows = [header] + rolls.map { [$0.id, $0.displayName, readingSize($0), $0.skus.joined(separator: ", ")] }
     return formatTable(rows)
 }

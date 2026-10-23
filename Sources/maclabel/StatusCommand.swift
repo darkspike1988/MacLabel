@@ -38,10 +38,10 @@ struct StatusCommand: AsyncParsableCommand {
     }
 
     static func describe(_ status: LWStatus) -> String {
-        if status.isPaperOut { return CLIText.tr("kein Papier", "out of paper") }
-        if status.isJammed { return CLIText.tr("Papierstau", "paper jam") }
-        if status.hasError { return CLIText.tr("Fehler", "error") }
-        if !status.isReady { return CLIText.tr("nicht bereit", "not ready") }
-        return CLIText.tr("bereit", "ready")
+        if status.isPaperOut { return localizedString("out of paper") }
+        if status.isJammed { return localizedString("paper jam") }
+        if status.hasError { return localizedString("printer error") }
+        if !status.isReady { return localizedString("not ready") }
+        return localizedString("ready")
     }
 }

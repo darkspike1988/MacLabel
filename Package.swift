@@ -38,7 +38,7 @@ let package = Package(
         .testTarget(name: "LabelRenderTests", dependencies: ["LabelRender", "LabelMedia", "LabelProtocol"]),
         .testTarget(name: "LabelTransportTests", dependencies: ["LabelTransport"]),
         .testTarget(name: "MacLabelKitTests", dependencies: ["MacLabelKit"]),
-        .testTarget(name: "maclabelCLITests", dependencies: ["maclabel"]),
+        .testTarget(name: "maclabelCLITests", dependencies: ["maclabel", "MacLabelKit", "LabelMedia", "LabelTransport"]),
     ],
     swiftLanguageModes: [.v6]
 )

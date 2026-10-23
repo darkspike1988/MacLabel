@@ -6,6 +6,17 @@ public enum BatchError: Error, Equatable {
     case invalidCopies
 }
 
+extension BatchError: LocalizedError {
+    public var errorDescription: String? { text(bundle: L10n.bundle) }
+
+    func text(bundle: Bundle) -> String {
+        switch self {
+        case .unknownPlaceholder(let name): String(localized: "Unknown placeholder {\(name)}.", bundle: bundle)
+        case .invalidCopies: String(localized: "Copies must be at least 1.", bundle: bundle)
+        }
+    }
+}
+
 public struct CounterSpec: Sendable, Equatable {
     public var start: Int = 1
     public var step: Int = 1

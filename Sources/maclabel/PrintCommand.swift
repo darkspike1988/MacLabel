@@ -70,11 +70,11 @@ struct PrintCommand: AsyncParsableCommand {
     var dryRun: String?
 
     func validate() throws {
-        if copies < 1 { throw ValidationError(CLIText.tr("--copies muss mindestens 1 sein.", "--copies must be at least 1.")) }
+        if copies < 1 { throw ValidationError(localizedString("The option --copies must be at least 1.")) }
         if let dryRun {
             let ext = URL(fileURLWithPath: dryRun).pathExtension.lowercased()
             if ext != "png" && ext != "bin" {
-                throw ValidationError(CLIText.tr("--dry-run erwartet eine .png- oder .bin-Datei.", "--dry-run expects a .png or .bin file."))
+                throw ValidationError(localizedString("--dry-run expects a .png or .bin file."))
             }
         }
     }
@@ -95,23 +95,23 @@ struct PrintCommand: AsyncParsableCommand {
 
         let batch = try LabelBatch.expand(template, copies: copies, counter: counterSpec, table: table)
         if table != nil, batch.isEmpty {
-            throw fail(CLIText.tr("CSV enthält keine Datenzeilen", "CSV contains no data rows"), code: Exit.usage)
+            throw fail(localizedString("CSV contains no data rows"), code: Exit.usage)
         }
 
-        // Passive discovery only (IORegistry); no device is opened for a dry run.
-        let discovered: DiscoveredPrinter?
-        if dryRun != nil {
-            discovered = try? PrinterSelection.select(serial: printer)
-        } else {
-            discovered = nil
-        }
+        // Selecting a printer only reads the IORegistry; no device is opened here.
+        let selected: DiscoveredPrinter? = dryRun != nil
+            ? try? PrinterSelection.select(serial: printer)
+            : try PrinterSelection.select(serial: printer)
         let preferences = RollPreferences.standard()
-        let serialForRoll = discovered?.serialNumber ?? printer
-        let resolvedRoll = try resolveRoll(preferences: preferences, serial: serialForRoll)
+        let resolution = try RollResolver.resolve(
+            query: roll, catalog: .bundled, preferences: preferences,
+            serial: selected?.serialNumber ?? printer)
+        if let note = resolution.note { writeStderr(note) }
+        let resolvedRoll = resolution.roll
 
         var request = PrintRequest(
             contents: batch, roll: resolvedRoll,
-            model: discovered?.model ?? PrinterModel.lookup(productID: 0x20)!,
+            model: selected?.model ?? PrinterModel.lookup(productID: 0x20)!,
             density: density?.density, continuousLengthMM: length, allowOverflow: force
         )
 
@@ -120,21 +120,21 @@ struct PrintCommand: AsyncParsableCommand {
             return
         }
 
-        let found = try PrinterSelection.select(serial: printer)
+        guard let found = selected else { throw ExitCode(Exit.noPrinter) }
         request.model = found.model
         // Render before opening the device so content errors never touch the printer.
         _ = try PrintService.prepare(request)
         let connection = try USBPrinterConnection(printer: found)
         do {
             try await PrintService.print(request, using: connection) { done, total in
-                writeStderr(CLIText.tr("Etikett \(done)/\(total)…", "Label \(done)/\(total)…"))
+                writeStderr(localizedString("Label \(done)/\(total)…"))
             }
         } catch {
             await connection.close()
             throw error
         }
         await connection.close()
-        RollPreferences.standard().setLastRollID(resolvedRoll.id, forPrinterSerial: found.serialNumber)
+        preferences.setLastRollID(resolvedRoll.id, forPrinterSerial: found.serialNumber)
     }
 
     // MARK: Content
@@ -149,7 +149,7 @@ struct PrintCommand: AsyncParsableCommand {
             let wanted = symbology.lowercased()
             guard let kind = BarcodeSymbology.allCases.first(where: { $0.rawValue.lowercased() == wanted }) else {
                 let names = BarcodeSymbology.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", ")
-                throw fail(CLIText.tr("Unbekannte Symbologie \(symbology). Möglich: \(names).", "Unknown symbology \(symbology). Options: \(names)."), code: Exit.usage)
+                throw fail(localizedString("Unknown symbology \(symbology). Options: \(names)."), code: Exit.usage)
             }
             return .barcode(BarcodeContent(symbology: kind, value: body))
         }
@@ -157,7 +157,7 @@ struct PrintCommand: AsyncParsableCommand {
 
     static func counterSpec(_ raw: String) throws -> CounterSpec {
         guard let start = Int(raw) else {
-            throw fail(CLIText.tr("--counter erwartet eine ganze Zahl.", "--counter expects an integer."), code: Exit.usage)
+            throw fail(localizedString("--counter expects an integer."), code: Exit.usage)
         }
         // "007" keeps its leading zeros.
         return CounterSpec(start: start, step: 1, minimumDigits: raw.hasPrefix("-") ? 1 : raw.count)
@@ -168,42 +168,13 @@ struct PrintCommand: AsyncParsableCommand {
         do {
             data = try Data(contentsOf: URL(fileURLWithPath: path))
         } catch {
-            throw fail(CLIText.tr("CSV-Datei nicht lesbar: \(path)", "Cannot read CSV file: \(path)"), code: Exit.usage)
+            throw fail(localizedString("Cannot read CSV file: \(path)"), code: Exit.usage)
         }
         let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .windowsCP1252)
         guard let text else {
-            throw fail(CLIText.tr("CSV-Datei hat eine unbekannte Zeichenkodierung.", "The CSV file has an unknown text encoding."), code: Exit.usage)
+            throw fail(localizedString("The CSV file has an unknown text encoding."), code: Exit.usage)
         }
         return try CSVTable(parsing: text)
-    }
-
-    // MARK: Roll
-
-    private func resolveRoll(preferences: RollPreferences, serial: String?) throws -> LabelRoll {
-        let catalog = MediaCatalog.bundled
-        guard let query = roll else {
-            if let id = preferences.lastRollID(forPrinterSerial: serial), let remembered = catalog.roll(id: id) {
-                return remembered
-            }
-            throw fail(
-                CLIText.tr(
-                    "Keine Rolle gewählt. Beispiel: maclabel print \"Text\" --roll 11354",
-                    "No roll selected. Example: maclabel print \"Text\" --roll 11354"),
-                code: Exit.usage)
-        }
-        if let exact = catalog.roll(id: query) ?? catalog.roll(sku: query) { return exact }
-        let matches = catalog.search(query)
-        switch matches.count {
-        case 0:
-            throw fail(CLIText.tr("Keine Rolle gefunden für \"\(query)\".", "No roll found for \"\(query)\"."), code: Exit.usage)
-        case 1:
-            return matches[0]
-        default:
-            let head = CLIText.tr(
-                "Rolle \"\(query)\" ist mehrdeutig. Bitte genauer angeben:",
-                "Roll \"\(query)\" is ambiguous. Please be more specific:")
-            throw fail(head + "\n" + rollTable(Array(matches.prefix(10))), code: Exit.usage)
-        }
     }
 
     // MARK: Dry run
@@ -219,7 +190,7 @@ struct PrintCommand: AsyncParsableCommand {
         else { throw PrintError.nothingToPrint }
         CGImageDestinationAddImage(destination, preview, nil)
         guard CGImageDestinationFinalize(destination) else {
-            throw fail(CLIText.tr("Vorschau konnte nicht geschrieben werden.", "Could not write the preview."), code: Exit.internalError)
+            throw fail(localizedString("Could not write the preview."), code: Exit.internalError)
         }
     }
 }

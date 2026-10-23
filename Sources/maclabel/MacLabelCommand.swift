@@ -23,12 +23,6 @@ enum Exit {
     static let busy: Int32 = 75
 }
 
-/// Small de/en switch for the CLI's own texts (errors from the kit localize themselves).
-enum CLIText {
-    static var german: Bool { Locale.preferredLanguages.first?.hasPrefix("de") == true }
-    static func tr(_ de: String, _ en: String) -> String { german ? de : en }
-}
-
 func writeStderr(_ text: String) {
     FileHandle.standardError.write(Data((text + "\n").utf8))
 }
@@ -62,21 +56,6 @@ func exitCode(for error: any Error) -> Int32 {
 
 func message(for error: any Error) -> String {
     if let t = error as? TransportError { return PrintError.transport(t).localizedDescription }
-    if let b = error as? BatchError {
-        switch b {
-        case .unknownPlaceholder(let name):
-            return CLIText.tr("Unbekannter Platzhalter {\(name)}.", "Unknown placeholder {\(name)}.")
-        case .invalidCopies:
-            return CLIText.tr("Die Anzahl der Kopien muss mindestens 1 sein.", "Copies must be at least 1.")
-        }
-    }
-    if let c = error as? CSVError {
-        switch c {
-        case .noHeader: return CLIText.tr("Die CSV-Datei ist leer.", "The CSV file is empty.")
-        case .unterminatedQuote(let line):
-            return CLIText.tr("CSV: Anführungszeichen in Zeile \(line) nicht geschlossen.", "CSV: unterminated quote on line \(line).")
-        }
-    }
     return error.localizedDescription
 }
 
@@ -92,7 +71,7 @@ enum PrinterSelection {
     static func select(serial: String?, printers: [DiscoveredPrinter] = USBPrinterDiscovery.printers()) throws -> DiscoveredPrinter {
         if let serial {
             guard let match = printers.first(where: { $0.serialNumber == serial }) else {
-                throw fail(CLIText.tr("Kein Drucker mit Seriennummer \(serial) gefunden.", "No printer with serial number \(serial) found."), code: Exit.noPrinter)
+                throw fail(localizedString("No printer with serial number \(serial) found."), code: Exit.noPrinter)
             }
             guard match.model.family == .lwClassic else { throw unsupported(match) }
             return match

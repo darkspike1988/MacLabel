@@ -6,6 +6,17 @@ public enum CSVError: Error, Equatable {
     case unterminatedQuote(line: Int)
 }
 
+extension CSVError: LocalizedError {
+    public var errorDescription: String? { text(bundle: L10n.bundle) }
+
+    func text(bundle: Bundle) -> String {
+        switch self {
+        case .noHeader: String(localized: "The CSV file is empty.", bundle: bundle)
+        case .unterminatedQuote(let line): String(localized: "CSV: unterminated quote on line \(line).", bundle: bundle)
+        }
+    }
+}
+
 /// A parsed CSV file (German Excel flavour supported: `;` delimiter, UTF-8 BOM, CRLF).
 ///
 /// - The delimiter (`;`, `,` or tab) is detected from the first non-blank line, counting only

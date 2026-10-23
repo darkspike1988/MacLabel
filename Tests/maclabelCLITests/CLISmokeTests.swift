@@ -1,5 +1,9 @@
 import Foundation
+import LabelMedia
+import LabelTransport
+import MacLabelKit
 import Testing
+@testable import maclabel
 
 /// Runs the built `maclabel` binary. Never touches a printer: only `--dry-run`, `rolls` and usage errors.
 @Suite struct CLISmokeTests {
@@ -87,7 +91,42 @@ import Testing
     @Test func ambiguousRollListsCandidates() throws {
         let r = try Self.run(["print", "Test", "--roll", "label"])
         #expect(r.status == 64)
-        #expect(r.err.contains("\n"))
+        let catalog = MediaCatalog.bundled
+        let candidates = catalog.search("label")
+        #expect(candidates.count > 1)
+        for roll in candidates.prefix(10) { #expect(r.err.contains(roll.id)) }
+    }
+
+    @Test func sameSizeRollsAreNotAmbiguous() throws {
+        let url = Self.tempURL("x.bin")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let r = try Self.run(["print", "T", "--roll", "32x57", "--dry-run", url.path])
+        #expect(r.status == 0, "\(r.err)")
+        #expect(r.err.contains("11354"))
+        #expect(r.err.contains("1933084"))
+    }
+
+    @Test func rememberedRollIsUsedWithoutRollOption() throws {
+        let suite = "maclabel.test.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let prefs = RollPreferences(defaults: defaults)
+        prefs.setLastRollID("11354", forPrinterSerial: "SER1")
+        prefs.setLastRollID("1933084", forPrinterSerial: nil)
+
+        let withSerial = try RollResolver.resolve(query: nil, catalog: .bundled, preferences: prefs, serial: "SER1")
+        #expect(withSerial.roll.id == "11354")
+        let fallback = try RollResolver.resolve(query: nil, catalog: .bundled, preferences: prefs, serial: nil)
+        #expect(fallback.roll.id == "1933084")
+        #expect(throws: (any Error).self) {
+            try RollResolver.resolve(query: nil, catalog: .bundled, preferences: prefs, serial: "OTHER")
+        }
+
+        // End to end through the binary (dry run without printer uses the "default" key).
+        let url = Self.tempURL("x.bin")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let r = try Self.run(["print", "T", "--dry-run", url.path], suite: suite)
+        if USBPrinterDiscovery.printers().isEmpty { #expect(r.status == 0, "\(r.err)") }
     }
 
     @Test func overflowWithoutForceExits65() throws {

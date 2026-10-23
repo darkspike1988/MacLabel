@@ -114,6 +114,7 @@ private func contains(_ hay: [UInt8], _ needle: [UInt8]) -> Bool {
 actor CancelAwareTransport: PrinterTransport {
     private(set) var written: [[UInt8]] = []
     private var statusCount = 0
+    var isWaiting: Bool { statusCount >= 2 }
     func write(_ bytes: [UInt8]) throws {
         if Task.isCancelled { throw CancellationError() }
         written.append(bytes)
@@ -130,7 +131,8 @@ actor CancelAwareTransport: PrinterTransport {
 @Test func cancellationStillSendsResync() async throws {
     let t = CancelAwareTransport()
     let task = Task { try await PrintService.print(req(3), using: t) }
-    try await Task.sleep(for: .milliseconds(300))
+    // Wait until the print is blocked after label 1 (robust under parallel test load), then cancel.
+    for _ in 0..<500 where !(await t.isWaiting) { try await Task.sleep(for: .milliseconds(10)) }
     task.cancel()
     await #expect(throws: CancellationError.self) { try await task.value }
     let w = await t.written
@@ -142,4 +144,12 @@ final class Counter: @unchecked Sendable {
     private var items: [(Int, Int)] = []
     func add(_ v: (Int, Int)) { lock.lock(); items.append(v); lock.unlock() }
     var values: [(Int, Int)] { lock.lock(); defer { lock.unlock() }; return items }
+}
+
+@Test func batchAndCSVErrorTextsGermanAndEnglish() {
+    let de = localizedBundle(preferred: ["de"]), en = localizedBundle(preferred: ["en"])
+    #expect(BatchError.unknownPlaceholder("ort").text(bundle: de) == "Unbekannter Platzhalter {ort}.")
+    #expect(BatchError.unknownPlaceholder("ort").text(bundle: en) == "Unknown placeholder {ort}.")
+    #expect(CSVError.unterminatedQuote(line: 3).text(bundle: de) == "CSV: Anführungszeichen in Zeile 3 nicht geschlossen.")
+    #expect(CSVError.unterminatedQuote(line: 3).text(bundle: en) == "CSV: unterminated quote on line 3.")
 }

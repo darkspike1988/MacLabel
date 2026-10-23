@@ -13,14 +13,14 @@ struct PrintersCommand: ParsableCommand {
         guard !printers.isEmpty else {
             throw fail(PrintError.transport(.notFound).localizedDescription, code: Exit.noPrinter)
         }
-        let rows = [[CLIText.tr("Modell", "Model"), CLIText.tr("Seriennummer", "Serial"), CLIText.tr("Unterstützung", "Support")]]
+        let rows = [[localizedString("Model"), localizedString("Serial"), localizedString("Support")]]
             + printers.map { p in
                 [
                     p.model.name,
                     p.serialNumber ?? "-",
                     p.model.family == .lwClassic
-                        ? CLIText.tr("unterstützt", "supported")
-                        : CLIText.tr("nicht unterstützt", "not supported"),
+                        ? localizedString("supported")
+                        : localizedString("not supported"),
                 ]
             }
         print(formatTable(rows))
