@@ -62,6 +62,5 @@ public enum LabelContent: Sendable {
 
 public enum RenderError: Error, Equatable {
     case emptyContent
-    case unsupported
     case barcode(BarcodeError)
 }

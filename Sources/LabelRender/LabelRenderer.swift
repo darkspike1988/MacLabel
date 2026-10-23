@@ -17,34 +17,33 @@ public enum LabelRenderer {
         switch content {
         case .text(let text):
             guard let layout = TextLayout(text, in: geometry.readingSizePoints) else { throw RenderError.emptyContent }
-            let bitmap = rasterize(geometry) { ctx in
-                for line in layout.lines {
-                    ctx.saveGState()
-                    // Reading space is y-down; Core Text draws y-up.
-                    ctx.translateBy(x: line.x, y: line.baseline)
-                    ctx.scaleBy(x: 1, y: -1)
-                    ctx.textPosition = .zero
-                    CTLineDraw(line.line, ctx)
-                    ctx.restoreGState()
-                }
-            }
-            return RenderResult(bitmap: bitmap, preview: preview(bitmap, geometry: geometry),
-                                overflow: layout.overflow, quality: geometry.quality)
-        case .barcode, .qr, .image:
-            throw RenderError.unsupported
+            let bitmap = rasterize(geometry) { layout.draw(in: $0) }
+            return result(bitmap, overflow: layout.overflow, geometry: geometry)
+        case .barcode(let barcode):
+            let (bitmap, overflow) = try BarcodeLayout.render(barcode, geometry: geometry)
+            return result(bitmap, overflow: overflow, geometry: geometry)
+        case .qr(let qr):
+            let (bitmap, overflow) = try QRLayout.render(qr, geometry: geometry)
+            return result(bitmap, overflow: overflow, geometry: geometry)
+        case .image(let image):
+            return result(ImageLayout.render(image, geometry: geometry), overflow: false, geometry: geometry)
         }
     }
 
     public static func preferredQuality(for content: LabelContent, model: PrinterModel) -> PrintQuality {
         switch content {
-        case .barcode, .qr: model.supports600lpi ? .graphics : .text
-        case .text, .image: .text
+        case .barcode, .qr, .image: model.supports600lpi ? .graphics : .text
+        case .text: .text
         }
     }
 
+    private static func result(_ bitmap: MonochromeBitmap, overflow: Bool, geometry: LabelGeometry) -> RenderResult {
+        RenderResult(bitmap: bitmap, preview: preview(bitmap, geometry: geometry), overflow: overflow, quality: geometry.quality)
+    }
+
     /// Draws in reading points into a white 8-bit head-sized context clipped to the
-    /// printable area, then thresholds to 1 bit.
-    static func rasterize(_ geometry: LabelGeometry, draw: (CGContext) -> Void) -> MonochromeBitmap {
+    /// printable area, then thresholds (or, with `dither`, error-diffuses) to 1 bit.
+    static func rasterize(_ geometry: LabelGeometry, dither: Bool = false, draw: (CGContext) -> Void) -> MonochromeBitmap {
         let width = geometry.headDots, height = geometry.lengthLines
         var gray = [UInt8](repeating: 255, count: width * height)
         return gray.withUnsafeMutableBytes { buf in
@@ -60,8 +59,10 @@ public enum LabelRenderer {
             ctx.setFillColor(gray: 0, alpha: 1)
             draw(ctx)
             ctx.flush()
-            return Dithering.threshold(UnsafeBufferPointer(buf.bindMemory(to: UInt8.self)),
-                                       width: width, height: height, bytesPerRow: width)
+            let pixels = UnsafeBufferPointer(buf.bindMemory(to: UInt8.self))
+            return dither
+                ? Dithering.floydSteinberg(pixels, width: width, height: height, bytesPerRow: width, in: geometry.printableRect)
+                : Dithering.threshold(pixels, width: width, height: height, bytesPerRow: width)
         }
     }
 

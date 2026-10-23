@@ -112,6 +112,19 @@ struct TextLayout {
         }
     }
 
+    /// Draws all lines into `ctx`, whose user space is reading points (y down).
+    func draw(in ctx: CGContext) {
+        for line in lines {
+            ctx.saveGState()
+            // Reading space is y-down; Core Text draws y-up.
+            ctx.translateBy(x: line.x, y: line.baseline)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.textPosition = .zero
+            CTLineDraw(line.line, ctx)
+            ctx.restoreGState()
+        }
+    }
+
     static func font(size: CGFloat, bold: Bool) -> CTFont {
         CTFontCreateUIFontForLanguage(bold ? .emphasizedSystem : .system, size, nil)
             ?? CTFontCreateWithName("Helvetica" as CFString, size, nil)

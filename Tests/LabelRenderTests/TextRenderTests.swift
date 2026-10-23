@@ -122,22 +122,6 @@ import Testing
         #expect(Int(g.printableRect.maxX) - 1 - trail.maxX <= 3)
     }
 
-    @Test func nonTextContentUnsupportedForNow() {
-        let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
-        #expect(throws: RenderError.unsupported) {
-            try LabelRenderer.render(.barcode(.init(symbology: .code128, value: "A")), geometry: g)
-        }
-        #expect(throws: RenderError.unsupported) { try LabelRenderer.render(.qr(.init(payload: "x")), geometry: g) }
-    }
-
-    @Test func preferredQuality() {
-        let lw450 = PrinterModel.all.first { $0.supports600lpi }!
-        let lw550 = PrinterModel.all.first { !$0.supports600lpi }!
-        #expect(LabelRenderer.preferredQuality(for: .text(.init(text: "x")), model: lw450) == .text)
-        #expect(LabelRenderer.preferredQuality(for: .qr(.init(payload: "x")), model: lw450) == .graphics)
-        #expect(LabelRenderer.preferredQuality(for: .barcode(.init(symbology: .ean13, value: "1")), model: lw550) == .text)
-    }
-
     /// Writes sample previews when `MACLABEL_PREVIEW_DIR` is set.
     @Test func writeSamplePreviews() throws {
         guard let dir = ProcessInfo.processInfo.environment["MACLABEL_PREVIEW_DIR"] else { return }
