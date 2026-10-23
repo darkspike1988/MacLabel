@@ -21,8 +21,8 @@ MacLabel ist Open Source (MIT), gibt keine Daten an Dritte weiter und macht kein
 
 ## Unterstützte Drucker
 
-- v1: LabelWriter 400, 400 Turbo, Twin Turbo, 450, 450 Turbo, 450 Twin Turbo, 450 DUO (Etikettendrucker) und 4XL.
-- Erkannt, aber noch nicht unterstützt: 550-Serie, SE450, 300er-Serie.
+- v1: LabelWriter 400, 400 Turbo, Twin Turbo, DUO, 450, 450 Turbo, 450 Twin Turbo, 450 DUO und 4XL.
+- Erkannt, aber noch nicht unterstützt: 550-Serie (550, 550 Turbo), 5XL, Wireless, SE450, 300er-Serie.
 
 ## Installation aus dem Quellcode
 
