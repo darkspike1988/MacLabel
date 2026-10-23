@@ -11,6 +11,7 @@ import LabelProtocol
 public actor USBPrinterConnection: PrinterTransport {
     private static let chunkSize = 4096
     private static let writeTimeout: TimeInterval = 10
+    private static let drainTimeout: TimeInterval = 0.05
 
     private let queue = DispatchSerialQueue(label: "maclabel.usb")
     public nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
@@ -18,6 +19,10 @@ public actor USBPrinterConnection: PrinterTransport {
     private var interface: IOUSBHostInterface?
     private let outPipe: IOUSBHostPipe
     private let inPipe: IOUSBHostPipe
+    /// `wMaxPacketSize` of the bulk IN endpoint; reads use whole packets.
+    private let inPacketSize: Int
+    /// Set after a read timed out: a late reply may still arrive and must not answer the next request.
+    private var needsDrain = false
 
     public init(printer: DiscoveredPrinter) throws {
         guard let matching = IORegistryEntryIDMatching(printer.id) else { throw TransportError.notFound }
@@ -33,9 +38,10 @@ public actor USBPrinterConnection: PrinterTransport {
             throw Self.mapOpenError(code: code, hasForeignClient: Self.hasForeignClient(interface: service))
         }
         do {
-            let (outAddress, inAddress) = try Self.bulkEndpoints(of: interface)
-            outPipe = try interface.copyPipe(withAddress: Int(outAddress))
-            inPipe = try interface.copyPipe(withAddress: Int(inAddress))
+            let endpoints = try Self.bulkEndpoints(of: interface)
+            outPipe = try interface.copyPipe(withAddress: Int(endpoints.out))
+            inPipe = try interface.copyPipe(withAddress: Int(endpoints.in))
+            inPacketSize = endpoints.inPacketSize
         } catch {
             interface.destroy()
             throw TransportError(error: error)
@@ -67,19 +73,40 @@ public actor USBPrinterConnection: PrinterTransport {
 
     public func read(maxLength: Int, timeout: Duration) throws -> [UInt8] {
         guard interface != nil else { throw TransportError.disconnected }
-        guard maxLength > 0, let buffer = NSMutableData(length: maxLength) else { return [] }
-        var received = 0
+        guard maxLength > 0 else { return [] }
+        let received: [UInt8]
         do {
-            try inPipe.__sendIORequest(with: buffer, bytesTransferred: &received, completionTimeout: timeout.timeInterval)
-        } catch {
-            throw TransportError(error: error)
+            received = try readPackets(maxLength: maxLength, timeout: timeout.timeInterval)
+        } catch let error as TransportError {
+            if error == .timeout { needsDrain = true }
+            throw error
         }
-        return Array(UnsafeRawBufferPointer(start: buffer.bytes, count: min(received, maxLength)))
+        return InPipeReply.reply(from: received, maxLength: maxLength)
     }
 
     public func transact(_ request: [UInt8], maxLength: Int, timeout: Duration) throws -> [UInt8] {
+        if needsDrain { drainInPipe() }
         try write(request)
         return try read(maxLength: maxLength, timeout: timeout)
+    }
+
+    /// One IN transfer into a whole-packet buffer; returns only the bytes actually transferred.
+    private func readPackets(maxLength: Int, timeout: TimeInterval) throws -> [UInt8] {
+        let length = InPipeReply.bufferLength(maxLength: maxLength, packetSize: inPacketSize)
+        guard let buffer = NSMutableData(length: length) else { return [] }
+        var received = 0
+        do {
+            try inPipe.__sendIORequest(with: buffer, bytesTransferred: &received, completionTimeout: timeout)
+        } catch {
+            throw TransportError(error: error)
+        }
+        return Array(UnsafeRawBufferPointer(start: buffer.bytes, count: min(received, length)))
+    }
+
+    /// Discards late replies left in the IN pipe after a timeout (short reads until empty, bounded).
+    private func drainInPipe() {
+        InPipeReply.drain { try readPackets(maxLength: 1, timeout: Self.drainTimeout) }
+        needsDrain = false
     }
 
     public func close() {
@@ -120,21 +147,31 @@ public actor USBPrinterConnection: PrinterTransport {
         return false
     }
 
-    /// Bulk OUT / bulk IN endpoint addresses of the interface (0x02 / 0x82 on the LW450).
-    private static func bulkEndpoints(of interface: IOUSBHostInterface) throws -> (out: UInt8, in: UInt8) {
+    /// Bulk OUT / bulk IN endpoint addresses of the interface (0x02 / 0x82 on the LW450) and the
+    /// IN endpoint's `wMaxPacketSize`.
+    private static func bulkEndpoints(of interface: IOUSBHostInterface) throws -> (out: UInt8, in: UInt8, inPacketSize: Int) {
         let configuration = interface.configurationDescriptor
         var current: UnsafePointer<IOUSBDescriptorHeader>?
         var outAddress: UInt8?
         var inAddress: UInt8?
+        var inPacketSize = 64
         while let endpoint = IOUSBGetNextEndpointDescriptor(configuration, interface.interfaceDescriptor, current) {
             let address = endpoint.pointee.bEndpointAddress
             if endpoint.pointee.bmAttributes & 0x03 == 0x02 {
-                if address & 0x80 != 0 { inAddress = inAddress ?? address } else { outAddress = outAddress ?? address }
+                if address & 0x80 != 0 {
+                    if inAddress == nil {
+                        inAddress = address
+                        let size = Int(UInt16(littleEndian: endpoint.pointee.wMaxPacketSize) & 0x07FF)
+                        if size > 0 { inPacketSize = size }
+                    }
+                } else {
+                    outAddress = outAddress ?? address
+                }
             }
             current = UnsafeRawPointer(endpoint).assumingMemoryBound(to: IOUSBDescriptorHeader.self)
         }
         guard let outAddress, let inAddress else { throw TransportError.ioFailure(kIOReturnNotFound) }
-        return (outAddress, inAddress)
+        return (outAddress, inAddress, inPacketSize)
     }
 }
 
