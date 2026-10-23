@@ -102,11 +102,39 @@ private func contains(_ hay: [UInt8], _ needle: [UInt8]) -> Bool {
     await #expect(throws: PrintError.transport(.timeout)) { try await PrintService.print(req(2), using: t) }
 }
 @Test func errorTextsGermanAndEnglish() {
-    let e = PrintError.rollTooWide(rollID: "x", needs: 1248, has: 672)
-    #expect(e.errorDescription?.isEmpty == false)
-    #expect(PrintError.transport(.busy).errorDescription != nil)
-    #expect(PrintError.printerNotReady(LWStatus(raw: 0x23)).errorDescription?.contains("paper") == true
-         || PrintError.printerNotReady(LWStatus(raw: 0x23)).errorDescription?.contains("Papier") == true)
+    let de = PrintError.transport(.busy).text(bundle: localizedBundle(preferred: ["de-DE"]))
+    #expect(de == "Drucker wird gerade von einer anderen App benutzt.")
+    let en = PrintError.transport(.busy).text(bundle: localizedBundle(preferred: ["en"]))
+    #expect(en == "The printer is currently in use by another app.")
+    let deWide = PrintError.rollTooWide(rollID: "x", needs: 1248, has: 672).text(bundle: localizedBundle(preferred: ["de"]))
+    #expect(deWide.hasPrefix("Diese Rolle ist zu breit für den Druckkopf (") && deWide.hasSuffix(" statt 672 Punkte)."))
+    #expect(PrintError.printerNotReady(LWStatus(raw: 0x23)).text(bundle: localizedBundle(preferred: ["de"])).contains("kein Papier"))
+}
+
+actor CancelAwareTransport: PrinterTransport {
+    private(set) var written: [[UInt8]] = []
+    private var statusCount = 0
+    func write(_ bytes: [UInt8]) throws {
+        if Task.isCancelled { throw CancellationError() }
+        written.append(bytes)
+    }
+    func read(maxLength: Int, timeout: Duration) -> [UInt8] { [] }
+    func transact(_ request: [UInt8], maxLength: Int, timeout: Duration) async throws -> [UInt8] {
+        statusCount += 1
+        if statusCount == 2 { try? await Task.sleep(for: .seconds(30)) } // after label 1: wait for cancel
+        return [0x03]
+    }
+    func close() {}
+}
+
+@Test func cancellationStillSendsResync() async throws {
+    let t = CancelAwareTransport()
+    let task = Task { try await PrintService.print(req(3), using: t) }
+    try await Task.sleep(for: .milliseconds(300))
+    task.cancel()
+    await #expect(throws: CancellationError.self) { try await task.value }
+    let w = await t.written
+    #expect(w.last == LWClassicEncoder.resync + [0x1B, 0x40])
 }
 
 final class Counter: @unchecked Sendable {

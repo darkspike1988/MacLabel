@@ -47,43 +47,45 @@ public enum PrintError: Error, Equatable {
 }
 
 extension PrintError: LocalizedError {
-    public var errorDescription: String? {
+    public var errorDescription: String? { text(bundle: L10n.bundle) }
+
+    func text(bundle: Bundle) -> String {
         switch self {
         case .nothingToPrint:
-            String(localized: "There is nothing to print.", bundle: .module)
+            String(localized: "There is nothing to print.", bundle: bundle)
         case .unsupportedPrinter(let name):
-            String(localized: "The printer \(name) is not supported.", bundle: .module)
+            String(localized: "The printer \(name) is not supported.", bundle: bundle)
         case .rollTooWide(_, let needs, let has):
-            String(localized: "This roll is too wide for the print head (\(needs) instead of \(has) dots).", bundle: .module)
+            String(localized: "This roll is too wide for the print head (\(needs) instead of \(has) dots).", bundle: bundle)
         case .invalidLength:
-            String(localized: "The label length is not valid (10 to 1000 mm).", bundle: .module)
+            String(localized: "The label length is not valid (10 to 1000 mm).", bundle: bundle)
         case .overflow(let index):
-            String(localized: "Content does not fit on label \(index + 1).", bundle: .module)
+            String(localized: "Content does not fit on label \(index + 1).", bundle: bundle)
         case .printerNotReady(let status):
-            String(localized: "The printer is not ready: \(Self.reason(status)).", bundle: .module)
+            String(localized: "The printer is not ready: \(Self.reason(status, bundle: bundle)).", bundle: bundle)
         case .interrupted(let printed, let total, let status):
-            String(localized: "Printing interrupted after \(printed) of \(total) labels: \(Self.reason(status)).", bundle: .module)
+            String(localized: "Printing interrupted after \(printed) of \(total) labels: \(Self.reason(status, bundle: bundle)).", bundle: bundle)
         case .render(let error):
             switch error {
-            case .emptyContent: String(localized: "A label has no content.", bundle: .module)
-            case .barcode: String(localized: "The barcode value is not valid for this barcode type.", bundle: .module)
+            case .emptyContent: String(localized: "A label has no content.", bundle: bundle)
+            case .barcode: String(localized: "The barcode value is not valid for this barcode type.", bundle: bundle)
             }
         case .transport(let error):
             switch error {
-            case .busy: String(localized: "The printer is currently in use by another app.", bundle: .module)
-            case .notFound: String(localized: "No printer found.", bundle: .module)
-            case .timeout: String(localized: "The printer did not respond in time.", bundle: .module)
-            case .disconnected: String(localized: "The printer was disconnected.", bundle: .module)
-            case .ioFailure(let code): String(localized: "USB communication error (\(Int(code))).", bundle: .module)
+            case .busy: String(localized: "The printer is currently in use by another app.", bundle: bundle)
+            case .notFound: String(localized: "No printer found.", bundle: bundle)
+            case .timeout: String(localized: "The printer did not respond in time.", bundle: bundle)
+            case .disconnected: String(localized: "The printer was disconnected.", bundle: bundle)
+            case .ioFailure(let code): String(localized: "USB communication error (\(Int(code))).", bundle: bundle)
             }
         }
     }
 
-    static func reason(_ status: LWStatus) -> String {
-        if status.isPaperOut { return String(localized: "out of paper", bundle: .module) }
-        if status.isJammed { return String(localized: "paper jam", bundle: .module) }
-        if status.hasError { return String(localized: "printer error", bundle: .module) }
-        return String(localized: "not ready", bundle: .module)
+    static func reason(_ status: LWStatus, bundle: Bundle) -> String {
+        if status.isPaperOut { return String(localized: "out of paper", bundle: bundle) }
+        if status.isJammed { return String(localized: "paper jam", bundle: bundle) }
+        if status.hasError { return String(localized: "printer error", bundle: bundle) }
+        return String(localized: "not ready", bundle: bundle)
     }
 }
 
@@ -163,8 +165,9 @@ public enum PrintService {
             try await transport.write(LWClassicEncoder.endOfJob)
         } catch {
             if headerSent {
-                // Discard partial data; resync + ESC @ never moves paper.
-                try? await transport.write(LWClassicEncoder.resync + [0x1B, 0x40])
+                // Discard partial data; resync + ESC @ never moves paper. Unstructured task:
+                // it must not inherit this task's cancellation, or the write would fail at once.
+                await Task { try? await transport.write(LWClassicEncoder.resync + [0x1B, 0x40]) }.value
             }
             if let error = error as? TransportError { throw PrintError.transport(error) }
             throw error
