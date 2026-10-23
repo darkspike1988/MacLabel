@@ -6,3 +6,5 @@ DerivedData/
 xcuserdata/
 /dymo-local/
 .superpowers/
+__pycache__/
+*.pyc
