@@ -47,4 +47,32 @@ import Testing
         let err = NSError(domain: NSOSStatusErrorDomain, code: Int(kIOReturnExclusiveAccess))
         #expect(TransportError(error: err) == .busy)
     }
+
+    @Test func fileTransportTransactRecordsRequest() async throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let t = FileTransport(url: url)
+        #expect(try await t.transact([0x1B, 0x41], maxLength: 1, timeout: .seconds(1)) == [0x03])
+        #expect(try await t.transact([0x1B, 0x56], maxLength: 64, timeout: .seconds(1)) == [])
+        await t.close()
+        #expect(try Data(contentsOf: url) == Data([0x1B, 0x41, 0x1B, 0x56]))
+    }
+
+    @Test func openInternalErrorWithClientIsBusy() {
+        #expect(USBPrinterConnection.mapOpenError(code: kIOReturnInternalError, hasForeignClient: true) == .busy)
+    }
+    @Test func openInternalErrorWithoutClientIsFailure() {
+        #expect(USBPrinterConnection.mapOpenError(code: kIOReturnInternalError, hasForeignClient: false)
+            == .ioFailure(kIOReturnInternalError))
+    }
+    @Test func openNotPermittedWithClientIsNotBusy() {
+        #expect(USBPrinterConnection.mapOpenError(code: kIOReturnNotPermitted, hasForeignClient: true)
+            == .ioFailure(kIOReturnNotPermitted))
+    }
+    @Test func openNoDeviceIsDisconnected() {
+        #expect(USBPrinterConnection.mapOpenError(code: kIOReturnNoDevice, hasForeignClient: true) == .disconnected)
+    }
+    @Test func openExclusiveAccessIsBusy() {
+        #expect(USBPrinterConnection.mapOpenError(code: kIOReturnExclusiveAccess, hasForeignClient: false) == .busy)
+    }
 }

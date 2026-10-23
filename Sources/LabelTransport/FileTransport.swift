@@ -30,6 +30,11 @@ public actor FileTransport: PrinterTransport {
         return lastWrite == LWClassicEncoder.statusRequest && maxLength > 0 ? [0x03] : []
     }
 
+    public func transact(_ request: [UInt8], maxLength: Int, timeout: Duration) throws -> [UInt8] {
+        try write(request)
+        return try read(maxLength: maxLength, timeout: timeout)
+    }
+
     public func close() {
         guard !isClosed else { return }
         isClosed = true

@@ -6,11 +6,14 @@ import LabelProtocol
 /// An open bulk connection to a printer-class USB interface.
 ///
 /// The IOUSBHost objects are not `Sendable`; they are created in `init`, stored only in actor-isolated
-/// properties and never leave the actor. Transfers use the synchronous `sendIORequest` API, so a call
-/// occupies the actor (and one executor thread) for at most its completion timeout.
+/// properties and never leave the actor. Transfers use the synchronous `sendIORequest` API; the actor
+/// runs on its own serial dispatch queue so a blocking transfer never occupies the cooperative pool.
 public actor USBPrinterConnection: PrinterTransport {
     private static let chunkSize = 4096
     private static let writeTimeout: TimeInterval = 10
+
+    private let queue = DispatchSerialQueue(label: "maclabel.usb")
+    public nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
 
     private var interface: IOUSBHostInterface?
     private let outPipe: IOUSBHostPipe
@@ -26,10 +29,8 @@ public actor USBPrinterConnection: PrinterTransport {
         do {
             interface = try IOUSBHostInterface(__ioService: service, options: [], queue: nil, interestHandler: nil)
         } catch {
-            // IOUSBHost reports an interface held by another client (CUPS, DYMO software, another
-            // process) as kIOReturnInternalError ("Failed [super init]"), not kIOReturnExclusiveAccess.
-            // An attached user client identifies that case.
-            throw Self.hasUserClient(service) ? TransportError.busy : TransportError(error: error)
+            let code = IOReturn(truncatingIfNeeded: (error as NSError).code)
+            throw Self.mapOpenError(code: code, hasForeignClient: Self.hasForeignClient(interface: service))
         }
         do {
             let (outAddress, inAddress) = try Self.bulkEndpoints(of: interface)
@@ -50,6 +51,7 @@ public actor USBPrinterConnection: PrinterTransport {
         guard interface != nil else { throw TransportError.disconnected }
         var offset = 0
         while offset < bytes.count {
+            if Task.isCancelled { throw CancellationError() }
             let end = min(offset + Self.chunkSize, bytes.count)
             let chunk = NSMutableData(bytes: Array(bytes[offset..<end]), length: end - offset)
             var sent = 0
@@ -75,15 +77,38 @@ public actor USBPrinterConnection: PrinterTransport {
         return Array(UnsafeRawBufferPointer(start: buffer.bytes, count: min(received, maxLength)))
     }
 
+    public func transact(_ request: [UInt8], maxLength: Int, timeout: Duration) throws -> [UInt8] {
+        try write(request)
+        return try read(maxLength: maxLength, timeout: timeout)
+    }
+
     public func close() {
         interface?.destroy()
         interface = nil
     }
 
-    /// Whether another client currently holds the interface open (a child entry with `IOUserClientCreator`).
-    private static func hasUserClient(_ service: io_service_t) -> Bool {
+    /// Maps a failed interface open. macOS 27 IOUSBHost reports an interface held by another client
+    /// (CUPS, DYMO software, another process) as kIOReturnInternalError ("Failed [super init]") rather
+    /// than kIOReturnExclusiveAccess, so InternalError counts as busy only when another client is attached.
+    static func mapOpenError(code: IOReturn, hasForeignClient: Bool) -> TransportError {
+        if code == kIOReturnInternalError && hasForeignClient { return .busy }
+        return TransportError(ioReturn: code)
+    }
+
+    /// Whether a user client is attached to the interface or to its parent `IOUSBHostDevice`.
+    /// Our own clients are not excluded: the open has just failed, so any existing client, including
+    /// another connection of this process, is holding the printer.
+    private static func hasForeignClient(interface: io_service_t) -> Bool {
+        if hasUserClientChild(interface) { return true }
+        var parent: io_registry_entry_t = 0
+        guard IORegistryEntryGetParentEntry(interface, "IOService", &parent) == KERN_SUCCESS else { return false }
+        defer { IOObjectRelease(parent) }
+        return IOObjectConformsTo(parent, "IOUSBHostDevice") != 0 && hasUserClientChild(parent)
+    }
+
+    private static func hasUserClientChild(_ entry: io_registry_entry_t) -> Bool {
         var iterator: io_iterator_t = 0
-        guard IORegistryEntryGetChildIterator(service, "IOService", &iterator) == KERN_SUCCESS else { return false }
+        guard IORegistryEntryGetChildIterator(entry, "IOService", &iterator) == KERN_SUCCESS else { return false }
         defer { IOObjectRelease(iterator) }
         while case let child = IOIteratorNext(iterator), child != 0 {
             defer { IOObjectRelease(child) }

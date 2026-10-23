@@ -6,6 +6,8 @@ import LabelProtocol
 public protocol PrinterTransport: Sendable {
     func write(_ bytes: [UInt8]) async throws
     func read(maxLength: Int, timeout: Duration) async throws -> [UInt8]
+    /// Writes `request` and reads the reply as one step: no other caller's I/O can run in between.
+    func transact(_ request: [UInt8], maxLength: Int, timeout: Duration) async throws -> [UInt8]
     func close() async
 }
 
@@ -45,8 +47,7 @@ extension TransportError {
 extension PrinterTransport {
     /// Sends `ESC A` and decodes the single status byte.
     public func status() async throws -> LWStatus {
-        try await write(LWClassicEncoder.statusRequest)
-        guard let byte = try await read(maxLength: 1, timeout: .seconds(2)).first else {
+        guard let byte = try await transact(LWClassicEncoder.statusRequest, maxLength: 1, timeout: .seconds(2)).first else {
             throw TransportError.timeout
         }
         return LWStatus(raw: byte)
@@ -54,7 +55,6 @@ extension PrinterTransport {
 
     /// Sends `ESC V` and parses the reply; `nil` if the reply is not a version string.
     public func version() async throws -> LWVersion? {
-        try await write(LWClassicEncoder.versionRequest)
-        return LWVersion(response: try await read(maxLength: 64, timeout: .seconds(2)))
+        LWVersion(response: try await transact(LWClassicEncoder.versionRequest, maxLength: 64, timeout: .seconds(2)))
     }
 }
