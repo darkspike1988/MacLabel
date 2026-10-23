@@ -164,4 +164,21 @@ import Testing
         let r = try Self.run(["print", "{name} {n}", "--csv", csv.path, "--counter", "1", "--roll", "11354", "--dry-run", out.path])
         #expect(r.status == 0, "\(r.err)")
     }
+
+    @Test func rotateOptionChangesJob() throws {
+        func job(_ extra: [String]) throws -> [UInt8] {
+            let url = Self.tempURL("rot.bin")
+            defer { try? FileManager.default.removeItem(at: url) }
+            let r = try Self.run(["print", "Regal 4", "--roll", "11354", "--dry-run", url.path] + extra)
+            #expect(r.status == 0, "\(r.err)")
+            return [UInt8](try Data(contentsOf: url))
+        }
+        let standard = try job([])
+        #expect(try job(["--rotate", "upright"]) == standard) // 11354 reads upright by default
+        let cw = try job(["--rotate", "cw"]), ccw = try job(["--rotate", "ccw"]), flipped = try job(["--rotate", "180"])
+        #expect(cw != standard && ccw != standard && flipped != standard)
+        #expect(cw != ccw)
+        let bad = try Self.run(["print", "x", "--roll", "11354", "--rotate", "sideways", "--dry-run", Self.tempURL("x.bin").path])
+        #expect(bad.status == 64)
+    }
 }

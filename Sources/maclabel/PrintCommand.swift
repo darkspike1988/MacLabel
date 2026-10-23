@@ -25,6 +25,19 @@ enum DensityOption: String, ExpressibleByArgument, CaseIterable {
     }
 }
 
+enum RotateOption: String, ExpressibleByArgument, CaseIterable {
+    case upright, cw, ccw
+    case upsideDown = "180"
+    var rotation: ReadingRotation {
+        switch self {
+        case .upright: .upright
+        case .cw: .clockwise90
+        case .ccw: .counterClockwise90
+        case .upsideDown: .upsideDown
+        }
+    }
+}
+
 struct PrintCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "print", abstract: "Print one label or a series."
@@ -45,7 +58,7 @@ struct PrintCommand: AsyncParsableCommand {
     @Option(help: "Barcode type: code128, ean13, ean8, upca, code39, itf14.")
     var symbology: String = "code128"
 
-    @Option(help: "Caption below a QR code.")
+    @Option(help: "Caption to the right of a QR code.")
     var caption: String?
 
     @Option(help: "Start value of the counter {n}.")
@@ -56,6 +69,9 @@ struct PrintCommand: AsyncParsableCommand {
 
     @Option(help: "light, medium, normal or dark. Default: automatic.")
     var density: DensityOption?
+
+    @Option(help: "Reading direction: upright, cw, ccw or 180. Default: automatic.")
+    var rotate: RotateOption?
 
     @Option(help: "Label length in mm for continuous rolls (10 to 1000).")
     var length: Double?
@@ -112,7 +128,8 @@ struct PrintCommand: AsyncParsableCommand {
         var request = PrintRequest(
             contents: batch, roll: resolvedRoll,
             model: selected?.model ?? PrinterModel.lookup(productID: 0x20)!,
-            density: density?.density, continuousLengthMM: length, allowOverflow: force
+            density: density?.density, rotation: rotate?.rotation,
+            continuousLengthMM: length, allowOverflow: force
         )
 
         if let dryRun {
