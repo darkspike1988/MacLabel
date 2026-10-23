@@ -48,3 +48,9 @@ private func texts(_ out: [LabelContent]) -> [String] {
     let qr = try LabelBatch.expand(.qr(.init(payload: "u/{n}", caption: "c{n}")), copies: 1, counter: .init(start: 5), table: nil)
     if case .qr(let q) = qr[0] { #expect(q.payload == "u/5"); #expect(q.caption == "c5") } else { Issue.record("not qr") }
 }
+
+@Test func unknownPlaceholderNameIsTrimmed() {
+    #expect(throws: BatchError.unknownPlaceholder("plz")) {
+        try LabelBatch.expand(.text(.init(text: "{ plz }")), copies: 1, counter: nil, table: nil)
+    }
+}

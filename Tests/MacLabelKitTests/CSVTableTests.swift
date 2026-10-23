@@ -34,3 +34,20 @@ import Testing
 @Test func quotedEmptyRowKept() throws {
     #expect(try CSVTable(parsing: "a\n\"\"\n").rows.count == 1)
 }
+
+@Test func singleColumnDecimalComma() throws {
+    let t = try CSVTable(parsing: "Preis\n3,50\n")
+    #expect(t.headers == ["Preis"])
+    #expect(t.rows[0]["Preis"] == "3,50")
+}
+@Test func singleColumnAddress() throws {
+    #expect(try CSVTable(parsing: "Adresse\nStraße 1, Köln\n").rows[0]["Adresse"] == "Straße 1, Köln")
+}
+@Test func singleColumnSemicolonData() throws {
+    #expect(try CSVTable(parsing: "Name\nA;B\n").rows[0]["Name"] == "A;B")
+}
+@Test func leadingBlankLinesStillDetectDelimiter() throws {
+    let t = try CSVTable(parsing: "\r\n\n\nName;Ort\nA;X\n")
+    #expect(t.headers == ["Name", "Ort"])
+    #expect(t.rows[0]["Ort"] == "X")
+}

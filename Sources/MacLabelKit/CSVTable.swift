@@ -8,8 +8,8 @@ public enum CSVError: Error, Equatable {
 
 /// A parsed CSV file (German Excel flavour supported: `;` delimiter, UTF-8 BOM, CRLF).
 ///
-/// - The delimiter (`;`, `,` or tab) is detected from the first line, counting only
-///   occurrences outside quotes. Ties prefer `;`, then `,`, then tab.
+/// - The delimiter (`;`, `,` or tab) is detected from the first non-blank line, counting only
+///   occurrences outside quotes. If that line has none, the file is single-column and is never split. Ties prefer `;`, then `,`, then tab.
 /// - Header names are trimmed. With duplicate header names the later column wins.
 /// - Rows with fewer fields than headers get `""` for the missing ones; extra fields are ignored.
 /// - Blank lines are ignored.
@@ -38,19 +38,22 @@ public struct CSVTable: Sendable, Equatable {
         self.rows = rows
     }
 
-    private static func detectDelimiter(_ scalars: [Unicode.Scalar]) -> Unicode.Scalar {
+    /// Looks only at the first non-blank line. No delimiter there means a single-column file (nil).
+    private static func detectDelimiter(_ scalars: [Unicode.Scalar]) -> Unicode.Scalar? {
         var counts: [Unicode.Scalar: Int] = [";": 0, ",": 0, "\t": 0]
         var inQuotes = false
+        var sawContent = false
         for s in scalars {
-            if s == "\"" { inQuotes.toggle(); continue }
+            if s == "\"" { inQuotes.toggle(); sawContent = true; continue }
             if inQuotes { continue }
             if s == "\n" || s == "\r" {
-                if counts.values.contains(where: { $0 > 0 }) { break }
-                continue // skip leading blank lines
+                if sawContent { break }
+                continue // skip genuinely blank lines
             }
+            sawContent = true
             if counts[s] != nil { counts[s]! += 1 }
         }
-        var best: Unicode.Scalar = ","
+        var best: Unicode.Scalar?
         var bestCount = 0
         for candidate in [";", ",", "\t"] as [Unicode.Scalar] where counts[candidate]! > bestCount {
             best = candidate
@@ -59,7 +62,7 @@ public struct CSVTable: Sendable, Equatable {
         return best
     }
 
-    private static func parseRecords(_ scalars: [Unicode.Scalar], delimiter: Unicode.Scalar) throws -> [[String]] {
+    private static func parseRecords(_ scalars: [Unicode.Scalar], delimiter: Unicode.Scalar?) throws -> [[String]] {
         var records: [[String]] = []
         var fields: [String] = []
         var field = String.UnicodeScalarView()
