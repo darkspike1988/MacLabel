@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "MacLabelKit",
+    defaultLocalization: "en",
     platforms: [.macOS(.v26)],
     products: [
         .library(name: "MacLabelKit", targets: ["MacLabelKit"]),
