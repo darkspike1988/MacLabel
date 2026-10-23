@@ -38,4 +38,26 @@ import Testing
         #expect(!s.contains("Étiquette"))
         #expect(!s.contains("EnglishName"))
     }
+
+    @Test func materialsAreNotMerged() {
+        let std = MediaCatalog.bundled.roll(sku: "S0722540")!
+        let dur = MediaCatalog.bundled.roll(sku: "1933084")!
+        #expect(std.material == "standard")
+        #expect(dur.material == "durable")
+        #expect(std.id != dur.id)
+        #expect(std.id == "11354")
+        #expect(std.skus.contains("30334"))
+        #expect(dur.skus.contains("2112289"))
+    }
+    @Test func searchRanksStandardBeforeDurable() {
+        let ids = MediaCatalog.bundled.search("32x57").map(\.id)
+        #expect(ids.first == "11354")
+        #expect(ids.contains(MediaCatalog.bundled.roll(sku: "1933084")!.id))
+    }
+    @Test func minHeadDotsFollowsPrintableWidth() {
+        #expect(MediaCatalog.bundled.roll(sku: "30256")!.minHeadDots == 672)
+        #expect(MediaCatalog.bundled.roll(sku: "30270")!.minHeadDots == 672)
+        #expect(MediaCatalog.bundled.roll(sku: "S0904980")!.minHeadDots == 1248)
+        #expect(MediaCatalog.bundled.rolls.allSatisfy { ($0.printable.widthDots > 672) == ($0.minHeadDots == 1248) })
+    }
 }

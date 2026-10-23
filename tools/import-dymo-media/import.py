@@ -154,7 +154,9 @@ def build(papers, skus, names):
             continue
         if not (n in skus_for or ARTICLE_RE.match(n)):
             continue
-        key = tuple(p[k] for k in ("w", "h", "pw", "ph", "ox", "oy"))
+        mats = [x["material"] for x in skus_for.get(n, []) if x["material"]]
+        p["material"] = "standard" if (not mats or "standard" in mats) else mats[0]
+        key = tuple(p[k] for k in ("w", "h", "pw", "ph", "ox", "oy", "material"))
         groups.setdefault(key, []).append(p)
 
     # SKU references are authoritative: an article number belongs to the paper
@@ -192,7 +194,6 @@ def build(papers, skus, names):
         origin_across = dots(p["ox"])
         width = dots(p["pw"])
         corner = next((s["corner"] for s in ss if s["corner"]), None)
-        mats = [s["material"] for s in ss if s["material"]]
         roll = {
             "id": skulist[0],
             "skus": skulist,
@@ -209,9 +210,9 @@ def build(papers, skus, names):
             },
             "offsetDots": offset_dots,
             "cornerRadiusMM": mm(corner) if corner else 0,
-            "material": mats[0] if mats else "standard",
+            "material": p["material"],
             "regions": sorted(set(s["region"] for s in ss if s["region"])),
-            "minHeadDots": 672 if offset_dots + origin_across + width <= 672 else 1248,
+            "minHeadDots": 672 if width <= 672 else 1248,
         }
         rolls.append(roll)
 
