@@ -210,3 +210,13 @@ Gerätesuche per IOKit-Matching (VID 0x0922 + PID-Tabelle, Interface-Klasse 7) u
 - Verhalten von ESC i bei LW400/4XL, Antwortzeit von ESC A, Antwort auf ESC V am eigenen Gerät: mit einem ersten Hardwaretest verifizieren (ein Testjob war hier ausdrücklich nicht erlaubt).
 - Pixelpolarität und Zeilenorientierung bei LW-V2 (der Quellcode prüft 0xFF als „weiß“, die Daten sind bottom-aligned) vor der 550-Unterstützung am echten Gerät prüfen.
 - Ob ESC @ direkt nach dem Öffnen bei laufendem Stromsparmodus sicher ist: laut [D1] wecken Daten das Gerät auf.
+
+## 10. Hardware-Verifikation am echten LW450 (23.10.2026, ohne Papierbewegung)
+
+Probe mit IOUSBHost.framework aus einem Swift-Kommandozeilenprogramm, ohne DYMO-Software im Pfad, ohne Entitlements, ohne Sandbox:
+
+- Matching: `IOServiceMatching("IOUSBHostInterface")` + `IOPropertyMatch {idVendor: 0x0922, idProduct: 0x0020, bInterfaceClass: 7}`. (Top-Level-Keys ohne `IOPropertyMatch` matchen nicht.)
+- `IOUSBHostInterface(__ioService:options:queue:interestHandler:)` öffnet das Interface ohne Fehler (CUPS-Queue im Leerlauf).
+- Endpoints: **Bulk OUT 0x02**, **Bulk IN 0x82**, jeweils wMaxPacketSize 64. [B]
+- `1B 41` (ESC A) → **1 Byte `0x03`** (Ready + Top of Form), wie im Manual beschrieben. [B]
+- `1B 56` (ESC V) → **10 Byte ASCII `1750111f0J`**. Modellnummer 1750111, Firmware `f0J`. Das Trennzeichen ist hier `f` und nicht `v` wie im Manual-Beispiel. Parser: die ersten 7 Zeichen = Modell, der Rest = Firmware. [B]
