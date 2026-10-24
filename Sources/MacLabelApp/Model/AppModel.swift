@@ -18,6 +18,14 @@ public enum PrintPhase: Equatable, Sendable {
     /// The user-facing text, `nil` while idle.
     public var message: String? { message(bundle: L10n.bundle) }
 
+    /// A print is waiting for the printer or running.
+    public var isActive: Bool {
+        switch self {
+        case .positioning, .printing: true
+        default: false
+        }
+    }
+
     func message(bundle: Bundle) -> String? {
         switch self {
         case .idle: nil
@@ -68,11 +76,14 @@ public final class AppModel {
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var settingsObserver: (any NSObjectProtocol)?
+    /// The default-printer setting last applied; only a change of this value moves the selection.
+    @ObservationIgnored private var appliedDefaultSerial: String?
 
     public init(printer: LabelPrinter = .shared, preview: PreviewEngine = PreviewEngine(), defaults: UserDefaults = .standard) {
         self.printer = printer
         self.preview = preview
         self.defaults = defaults
+        self.appliedDefaultSerial = AppSettings(defaults: defaults).defaultPrinterSerial
         self.monitor = PrinterMonitor(printer: printer)
         monitor.rediscover = { [weak self] in await self?.refreshPrinters() }
         schedulePreview()
@@ -88,9 +99,17 @@ public final class AppModel {
     func applySettings() {
         let settings = AppSettings(defaults: defaults)
         monitor.pollingEnabled = settings.statusPolling
-        guard let serial = settings.defaultPrinterSerial, selectedPrinter?.serialNumber != serial,
+        // Any key of the defaults domain posts the notification; act only on this setting's change.
+        let serial = settings.defaultPrinterSerial
+        guard serial != appliedDefaultSerial else { return }
+        appliedDefaultSerial = serial
+        guard let serial, selectedPrinter?.serialNumber != serial,
               let wanted = printers.first(where: { $0.serialNumber == serial }) else { return }
         selectedPrinter = wanted
+    }
+
+    isolated deinit {
+        if let settingsObserver { NotificationCenter.default.removeObserver(settingsObserver) }
     }
 
     /// Imports the first supported file of a drop or file choice. A newer import cancels the one in flight.
@@ -208,11 +227,11 @@ public final class AppModel {
     }
 
     /// Whether a print is waiting for the printer or running.
-    public var isPrinting: Bool {
-        switch printPhase {
-        case .positioning, .printing: true
-        default: false
-        }
+    public var isPrinting: Bool { printPhase.isActive }
+
+    /// Forgets the result of the last print (finished, cancelled, failed); a running print stays.
+    public func clearPrintOutcome() {
+        if !isPrinting { printPhase = .idle }
     }
 
     /// Why Print is unavailable before anything is sent, or `nil` when it can start.
@@ -242,6 +261,8 @@ public final class AppModel {
 
     private func selectionChanged(from old: DiscoveredPrinter?) {
         monitor.target = selectedPrinter
+        // The old printer's roll must not outlive the switch while the new printer's roll is looked up.
+        if let old, selectedPrinter.map(Self.key) != Self.key(old) { roll = nil }
         if selectedPrinter?.model != old?.model { schedulePreview() }
         guard let selected = selectedPrinter, old.map(Self.key) != Self.key(selected) else { return }
         rollTask = Task { [printer] in

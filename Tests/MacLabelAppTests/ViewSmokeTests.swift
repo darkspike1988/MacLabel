@@ -332,68 +332,6 @@ private func makeWindow(_ model: AppModel, appearance: NSAppearance.Name) -> NSW
     makeWindow(MainWindow().environment(model), size: CGSize(width: 980, height: 600), appearance: appearance)
 }
 
-/// An offscreen window (never ordered in) hosting `root`.
-@MainActor
-func makeWindow(_ root: some View, size: CGSize, appearance: NSAppearance.Name) -> NSWindow {
-    _ = NSApplication.shared
-    let window = NSWindow(
-        contentRect: CGRect(origin: .zero, size: size),
-        styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-        backing: .buffered, defer: false
-    )
-    window.isReleasedWhenClosed = false
-    window.appearance = NSAppearance(named: appearance)
-    window.contentViewController = NSHostingController(rootView: root)
-    window.setContentSize(size)
-    window.layoutIfNeeded()
-    return window
-}
-
-@MainActor
-func snapshot(of view: NSView) throws -> NSBitmapImageRep {
-    view.layoutSubtreeIfNeeded()
-    let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
-    view.cacheDisplay(in: view.bounds, to: rep)
-    return rep
-}
-
-/// Whether the right part of the window (the preview) holds a (near-)black pixel, i.e. printed ink on the paper.
-private func hasBlackPixel(_ rep: NSBitmapImageRep, inRight fraction: Double) -> Bool {
-    let startX = Int(Double(rep.pixelsWide) * (1 - fraction))
-    for y in stride(from: 0, to: rep.pixelsHigh * 4 / 5, by: 2) {
-        for x in stride(from: startX, to: rep.pixelsWide, by: 2) {
-            guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
-            if c.redComponent < 0.1, c.greenComponent < 0.1, c.blueComponent < 0.1 { return true }
-        }
-    }
-    return false
-}
-
-func distinctColors(_ rep: NSBitmapImageRep) -> Int {
-    var seen = Set<UInt32>()
-    let stepX = max(1, rep.pixelsWide / 60), stepY = max(1, rep.pixelsHigh / 60)
-    for y in stride(from: 0, to: rep.pixelsHigh, by: stepY) {
-        for x in stride(from: 0, to: rep.pixelsWide, by: stepX) {
-            guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
-            let key = UInt32(c.redComponent * 255) << 16 | UInt32(c.greenComponent * 255) << 8 | UInt32(c.blueComponent * 255)
-            seen.insert(key)
-            if seen.count > 8 { return seen.count }
-        }
-    }
-    return seen.count
-}
-
-/// Writes a PNG only when `MACLABEL_SNAPSHOTS=1` (directory: `MACLABEL_SNAPSHOTS_DIR` or the temp dir).
-func saveIfRequested(_ rep: NSBitmapImageRep, name: String) throws {
-    let env = ProcessInfo.processInfo.environment
-    guard env["MACLABEL_SNAPSHOTS"] == "1" else { return }
-    let dir = URL(fileURLWithPath: env["MACLABEL_SNAPSHOTS_DIR"] ?? NSTemporaryDirectory())
-        .appending(path: env["MACLABEL_SNAPSHOTS_DIR"] == nil ? "maclabel-app-shots" : "")
-    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-    let data = try #require(rep.representation(using: .png, properties: [:]))
-    try data.write(to: dir.appending(path: "\(name).png"))
-}
-
 @MainActor
 private func findButton(titled prefix: String, in view: NSView) -> NSButton? {
     if let button = view as? NSButton, button.title.hasPrefix(prefix) { return button }

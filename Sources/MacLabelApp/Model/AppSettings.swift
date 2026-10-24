@@ -22,8 +22,33 @@ public struct AppSettings {
         defaults.string(forKey: Self.defaultPrinterSerialKey).flatMap { $0.isEmpty ? nil : $0 }
     }
 
-    /// The Terminal command that links the bundled command line tool into `/usr/local/bin`.
-    public static func cliInstallCommand(bundlePath: String = Bundle.main.bundlePath) -> String {
-        "ln -sf \"\(bundlePath)/Contents/MacOS/maclabel\" /usr/local/bin/maclabel"
+    /// How the command line tool can be linked into the PATH.
+    public enum CLIInstall: Equatable, Sendable {
+        /// `/opt/homebrew/bin` exists and is writable: no administrator rights needed.
+        case homebrew(String)
+        /// `/usr/local/bin` needs `sudo` (asks for the administrator password).
+        case systemWide(String)
+        /// The app runs translocated (straight from the download); a link would break.
+        case moveFirst
+    }
+
+    /// Whether `/opt/homebrew/bin` exists and the user may write there.
+    public static var homebrewBinWritable: Bool {
+        var isDirectory: ObjCBool = false
+        let path = "/opt/homebrew/bin"
+        return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
+            && isDirectory.boolValue && FileManager.default.isWritableFile(atPath: path)
+    }
+
+    /// The Terminal command that links the bundled command line tool into the PATH.
+    public static func cliInstall(
+        bundlePath: String = Bundle.main.bundlePath, homebrewBinWritable: Bool = AppSettings.homebrewBinWritable
+    ) -> CLIInstall {
+        if bundlePath.contains("/AppTranslocation/") { return .moveFirst }
+        let tool = "'" + (bundlePath + "/Contents/MacOS/maclabel").replacing("'", with: "'\\''") + "'"
+        if homebrewBinWritable {
+            return .homebrew("ln -sf \(tool) /opt/homebrew/bin/maclabel")
+        }
+        return .systemWide("sudo mkdir -p /usr/local/bin && sudo ln -sf \(tool) /usr/local/bin/maclabel")
     }
 }

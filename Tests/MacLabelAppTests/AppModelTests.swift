@@ -62,7 +62,7 @@ struct AppNoStampClock: FormFeedClock {
 }
 
 func appPrefs(remembered: String? = nil, serial: String? = "S1") -> RollPreferences {
-    let prefs = RollPreferences(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+    let prefs = RollPreferences(defaults: tempDefaults())
     if let remembered { prefs.setLastRollID(remembered, forPrinterSerial: serial) }
     return prefs
 }
@@ -198,24 +198,24 @@ private func model(
     #expect(PrintPhase.failed("x").message(bundle: de) == "x")
 }
 
-@Test @MainActor func positioningEventShownAsPhase() async throws {
-    // 3 s of pause left: observable even when the first window test blocks the main actor for ~2 s.
-    let clock = FixedClock(lastFeed: Date().addingTimeInterval(-7))
+@Test @MainActor func positioningEventShownAsPhase() async {
+    // 3 s of pause left at the injected `now`; the gate sleeper keeps the pause open until released.
+    let now = Date(timeIntervalSinceReferenceDate: 1000)
+    let clock = FixedClock(lastFeed: now.addingTimeInterval(-7))
+    let sleeper = ManualSleeper()
     let printer = LabelPrinter(
-        factory: AppStubFactory(list: [appLW450Printer]), preferences: appPrefs(remembered: "11354"), formFeedClock: clock
+        factory: AppStubFactory(list: [appLW450Printer]), preferences: appPrefs(remembered: "11354"), formFeedClock: clock,
+        sleep: { try await sleeper.sleep($0) }, now: { now }
     )
-    let m = AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: 1))
+    let m = AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: 1), defaults: tempDefaults())
     await m.refreshPrinters()
     m.document.text = "x"
     let job = Task { await m.print(allowOverflow: false) }
-    var sawPositioning = false
-    let deadline = ContinuousClock.now + .seconds(5)
-    while !sawPositioning, ContinuousClock.now < deadline {
-        if case .positioning = m.printPhase { sawPositioning = true }
-        try await Task.sleep(for: .milliseconds(2))
-    }
+    await waitFor { if case .positioning = m.printPhase { true } else { false } }
+    #expect(m.printPhase == .positioning(remaining: .seconds(3)))
+    #expect(await sleeper.requests == [.seconds(3)])
+    await sleeper.advance()
     await job.value
-    #expect(sawPositioning)
     #expect(m.printPhase == .finished(1))
 }
 

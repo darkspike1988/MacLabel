@@ -21,7 +21,7 @@ private let okPreview = PreviewResult(pages: [], totalLabels: 1, overflowIndices
     }
 
     @Test func textBeforeThePreviewIsReadyStillPrints() {
-        #expect(MenuBarPanel.action(for: textDocument("Keller"), preview: nil) == .print)
+        #expect(MenuBarPanel.action(for: textDocument("Keller"), preview: nil, hasRoll: true) == .print)
     }
 
     @Test func overflowOpensTheWindow() {
@@ -64,14 +64,14 @@ private let okPreview = PreviewResult(pages: [], totalLabels: 1, overflowIndices
 
 @Suite struct AppSettingsTests {
     @Test func defaultsAreOn() {
-        let settings = AppSettings(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        let settings = AppSettings(defaults: tempDefaults())
         #expect(settings.showMenuBarExtra)
         #expect(settings.statusPolling)
         #expect(settings.defaultPrinterSerial == nil)
     }
 
     @Test func readsStoredValues() {
-        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        let defaults = tempDefaults()
         defaults.set(false, forKey: "statusPolling")
         defaults.set(false, forKey: "showMenuBarExtra")
         defaults.set("S2", forKey: "defaultPrinterSerial")
@@ -80,15 +80,31 @@ private let okPreview = PreviewResult(pages: [], totalLabels: 1, overflowIndices
         #expect(settings.defaultPrinterSerial == "S2")
     }
 
-    @Test func cliCommandLinksTheBundledTool() {
-        #expect(AppSettings.cliInstallCommand(bundlePath: "/Applications/MacLabel.app")
-            == "ln -sf \"/Applications/MacLabel.app/Contents/MacOS/maclabel\" /usr/local/bin/maclabel")
+    @Test func homebrewBranchNeedsNoAdministrator() {
+        #expect(AppSettings.cliInstall(bundlePath: "/Applications/MacLabel.app", homebrewBinWritable: true)
+            == .homebrew("ln -sf '/Applications/MacLabel.app/Contents/MacOS/maclabel' /opt/homebrew/bin/maclabel"))
+    }
+
+    @Test func systemBranchUsesSudoAndCreatesTheDirectory() {
+        #expect(AppSettings.cliInstall(bundlePath: "/Applications/MacLabel.app", homebrewBinWritable: false)
+            == .systemWide("sudo mkdir -p /usr/local/bin && sudo ln -sf '/Applications/MacLabel.app/Contents/MacOS/maclabel' /usr/local/bin/maclabel"))
+    }
+
+    @Test func pathWithSpacesAndApostropheIsQuoted() {
+        let install = AppSettings.cliInstall(bundlePath: "/Users/o'neil/My Apps/MacLabel.app", homebrewBinWritable: true)
+        #expect(install == .homebrew("ln -sf '/Users/o'\\''neil/My Apps/MacLabel.app/Contents/MacOS/maclabel' /opt/homebrew/bin/maclabel"))
+    }
+
+    @Test func translocatedAppMustMoveFirst() {
+        let path = "/private/var/folders/xy/AppTranslocation/ABC/d/MacLabel.app"
+        #expect(AppSettings.cliInstall(bundlePath: path, homebrewBinWritable: true) == .moveFirst)
+        #expect(AppSettings.cliInstall(bundlePath: path, homebrewBinWritable: false) == .moveFirst)
     }
 }
 
 @Suite(.serialized) struct SettingsWiringTests {
     @Test @MainActor func disablingPollingStopsTheMonitor() async {
-        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        let defaults = tempDefaults()
         let m = makeViewModel(printers: [appLW450Printer], remembered: "11354", defaults: defaults)
         m.monitor.visibilityChanged(visible: true)
         #expect(m.monitor.isPolling)
@@ -102,7 +118,7 @@ private let okPreview = PreviewResult(pages: [], totalLabels: 1, overflowIndices
     }
 
     @Test @MainActor func startsWithoutPollingWhenSwitchedOff() {
-        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        let defaults = tempDefaults()
         defaults.set(false, forKey: "statusPolling")
         let m = makeViewModel(printers: [appLW450Printer], remembered: "11354", defaults: defaults)
         m.monitor.visibilityChanged(visible: true)
@@ -111,7 +127,7 @@ private let okPreview = PreviewResult(pages: [], totalLabels: 1, overflowIndices
     }
 
     @Test @MainActor func defaultPrinterIsSelectedBySerial() async {
-        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        let defaults = tempDefaults()
         defaults.set("S2", forKey: "defaultPrinterSerial")
         let m = makeViewModel(printers: [appLW450Printer, appLW550Printer], remembered: "11354", defaults: defaults)
         await m.refreshPrinters()
@@ -173,5 +189,74 @@ private let okPreview = PreviewResult(pages: [], totalLabels: 1, overflowIndices
             try saveIfRequested(image, name: "\(name)-\(appearance == .aqua ? "light" : "dark")")
             window.close()
         }
+    }
+}
+
+@Suite(.serialized) struct FixRound1Tests {
+    @Test @MainActor func foreignDefaultsKeyDoesNotResetTheSelection() async {
+        let defaults = tempDefaults()
+        defaults.set("S1", forKey: "defaultPrinterSerial")
+        let other = DiscoveredPrinter(id: 3, model: appLW450, serialNumber: "S3", locationID: nil)
+        let m = makeViewModel(printers: [appLW450Printer, other], remembered: "11354", defaults: defaults)
+        await m.refreshPrinters()
+        #expect(m.selectedPrinter?.serialNumber == "S1")
+        m.selectedPrinter = other
+        defaults.set("irrelevant", forKey: "NSWindow Frame Foo")
+        defaults.set(true, forKey: "statusPolling")
+        await Task.yield()
+        #expect(m.selectedPrinter?.serialNumber == "S3")
+    }
+
+    @Test @MainActor func switchingToAPrinterWithoutRollClearsTheRoll() async {
+        let other = DiscoveredPrinter(id: 3, model: appLW450, serialNumber: "S3", locationID: nil)
+        let m = makeViewModel(printers: [appLW450Printer, other], remembered: "11354")
+        await m.refreshPrinters()
+        #expect(m.roll?.id == "11354")
+        m.selectedPrinter = other
+        #expect(m.roll == nil)
+        #expect(m.printBlockReason != nil)
+        await m.print(document: MenuBarPanel.document(text: "x"), allowOverflow: false)
+        guard case .failed = m.printPhase else {
+            Issue.record("expected the print to be refused, got \(m.printPhase)")
+            return
+        }
+        await m.refreshPrinters()
+    }
+
+    @Test func blockReasonWinsOverAnOldOutcome() {
+        #expect(PrintStatusView.showsBlockReason(phase: .finished(1), blockReason: "No printer connected."))
+        #expect(PrintStatusView.showsBlockReason(phase: .idle, blockReason: "x"))
+        #expect(!PrintStatusView.showsBlockReason(phase: .printing(done: 0, total: 1), blockReason: "x"))
+        #expect(!PrintStatusView.showsBlockReason(phase: .positioning(remaining: .seconds(1)), blockReason: "x"))
+        #expect(!PrintStatusView.showsBlockReason(phase: .idle, blockReason: nil))
+    }
+
+    @Test @MainActor func clearingTheOutcomeKeepsARunningPrint() async {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await m.refreshPrinters()
+        await m.print(document: MenuBarPanel.document(text: "x"), allowOverflow: false)
+        #expect(m.printPhase == .finished(1))
+        m.clearPrintOutcome()
+        #expect(m.printPhase == .idle)
+    }
+
+    @Test func noRollDisablesBeforeAnyPreviewExists() {
+        let de = localizedBundle(preferred: ["de"])
+        #expect(MenuBarPanel.action(for: textDocument("x"), preview: nil, hasRoll: false, bundle: de) == .disabled("Keine Rolle gewählt"))
+    }
+
+    @Test func settingsListsAStoredPrinterThatIsNotConnected() {
+        let choices = SettingsView.printerChoices(connected: [appLW450Printer, appLW550Printer], saved: "S9")
+        #expect(choices.map(\.serial) == ["S1", "S2", "S9"])
+        #expect(choices.last?.isConnected == false)
+        #expect(SettingsView.printerChoices(connected: [appLW450Printer], saved: "S1").count == 1)
+        #expect(SettingsView.printerChoices(connected: [appLW450Printer], saved: "").count == 1)
+    }
+
+    @Test func changeButtonUsesTheTypographicEllipsis() {
+        let de = localizedBundle(preferred: ["de"])
+        #expect(String(localized: "Change…", bundle: de) == "Ändern…")
+        #expect(String(localized: "Print the text (⌘↩)", bundle: de) == "Text drucken (⌘↩)")
+        #expect(String(localized: "\("S9") (not connected)", bundle: de) == "S9 (nicht verbunden)")
     }
 }

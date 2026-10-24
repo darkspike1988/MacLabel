@@ -34,6 +34,8 @@ public actor LabelPrinter {
     private let factory: any TransportFactory
     private let preferences: RollPreferences
     private let formFeedClock: any FormFeedClock
+    private let sleep: @Sendable (Duration) async throws -> Void
+    private let now: @Sendable () -> Date
     private var gateHeld = false
     private var gateWaiters: [CheckedContinuation<Void, Never>] = []
     /// Prints started (waiting or running) per printer id.
@@ -42,8 +44,12 @@ public actor LabelPrinter {
     public init(
         factory: any TransportFactory = LabelPrinter.makeDefault(),
         preferences: RollPreferences = .standard(),
-        formFeedClock: any FormFeedClock = UserDefaultsFormFeedClock.standard()
+        formFeedClock: any FormFeedClock = UserDefaultsFormFeedClock.standard(),
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
+        self.sleep = sleep
+        self.now = now
         self.factory = factory
         self.preferences = preferences
         self.formFeedClock = formFeedClock
@@ -106,10 +112,10 @@ public actor LabelPrinter {
         defer { releaseGate() }
 
         let spacing = JobSpacing(clock: formFeedClock, serial: printer.serialNumber)
-        let pause = spacing.remainingPause()
+        let pause = spacing.remainingPause(now: now())
         if pause > .zero {
             onPhase(.positioning(remaining: pause))
-            try await Task.sleep(for: pause)
+            try await sleep(pause)
         }
         try Task.checkCancellation()
 

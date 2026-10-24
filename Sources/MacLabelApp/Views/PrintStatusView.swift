@@ -6,8 +6,23 @@ struct PrintStatusView: View {
     @Environment(AppModel.self) private var model
     let blockReason: String?
 
+    /// An active print shows its progress; otherwise the reason why printing is impossible beats an old outcome.
+    nonisolated static func showsBlockReason(phase: PrintPhase, blockReason: String?) -> Bool {
+        blockReason != nil && !phase.isActive
+    }
+
     var body: some View {
         let phase = model.printPhase
+        if Self.showsBlockReason(phase: phase, blockReason: blockReason), let blockReason {
+            Label(blockReason, systemImage: "info.circle")
+                .foregroundStyle(.secondary)
+        } else {
+            status(for: phase)
+        }
+    }
+
+    @ViewBuilder
+    private func status(for phase: PrintPhase) -> some View {
         switch phase {
         case .positioning(let remaining):
             PositioningProgress(remaining: remaining, message: phase.message ?? "")
@@ -38,13 +53,8 @@ struct PrintStatusView: View {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
             }
         case .idle:
-            if let blockReason {
-                Label(blockReason, systemImage: "info.circle")
-                    .foregroundStyle(.secondary)
-            } else {
-                // Keeps the bar's middle flexible, so Print stays at the trailing edge.
-                Color.clear.frame(height: 0)
-            }
+            // Keeps the bar's middle flexible, so Print stays at the trailing edge.
+            Color.clear.frame(height: 0)
         }
     }
 }

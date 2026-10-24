@@ -8,9 +8,12 @@ import MacLabelKit
 
 @Suite struct PrinterMonitorTests {
     @MainActor
-    private func monitor(_ factory: AppStubFactory, interval: Duration = .milliseconds(20), busyBackoff: Duration = .seconds(15)) -> PrinterMonitor {
+    private func monitor(
+        _ factory: AppStubFactory, interval: Duration = .milliseconds(20), busyBackoff: Duration = .seconds(15),
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+    ) -> PrinterMonitor {
         let printer = LabelPrinter(factory: factory, preferences: appPrefs(), formFeedClock: AppNoStampClock())
-        let m = PrinterMonitor(printer: printer, interval: interval, busyBackoff: busyBackoff)
+        let m = PrinterMonitor(printer: printer, interval: interval, busyBackoff: busyBackoff, sleep: sleep)
         m.target = appLW450Printer
         return m
     }
@@ -62,15 +65,32 @@ import MacLabelKit
         m.visibilityChanged(visible: false)
     }
 
-    @Test @MainActor func monitorBacksOffWhenBusy() async throws {
+    @Test @MainActor func monitorBacksOffWhenBusy() async {
         let factory = AppStubFactory(list: [appLW450Printer], openError: .busy)
-        let m = monitor(factory, busyBackoff: .milliseconds(200))
+        let sleeper = ManualSleeper()
+        let m = monitor(factory, busyBackoff: .seconds(15), sleep: { try await sleeper.sleep($0) })
         m.visibilityChanged(visible: true)
-        try await Task.sleep(for: .milliseconds(150))
+        await waitForAsync { await sleeper.sleepCount == 1 }
+        #expect(await sleeper.requests == [.seconds(15)])
         #expect(factory.log.opens == 1)
         #expect(m.state == .busy(name: "LabelWriter 450"))
-        await waitFor(timeout: .seconds(3)) { factory.log.opens >= 2 }
-        #expect(factory.log.opens >= 2)
+        await sleeper.advance()
+        await waitFor { factory.log.opens == 2 }
+        #expect(factory.log.opens == 2)
+        m.visibilityChanged(visible: false)
+    }
+
+    @Test @MainActor func restartingWhileBusyPollsImmediately() async {
+        let factory = AppStubFactory(list: [appLW450Printer], openError: .busy)
+        let sleeper = ManualSleeper()
+        let m = monitor(factory, sleep: { try await sleeper.sleep($0) })
+        m.visibilityChanged(visible: true)
+        await waitForAsync { await sleeper.sleepCount == 1 }
+        m.visibilityChanged(visible: false)
+        m.visibilityChanged(visible: true)
+        // No `advance()`: the restarted loop must query first and only then wait.
+        await waitFor { factory.log.opens == 2 }
+        #expect(factory.log.opens == 2)
         m.visibilityChanged(visible: false)
     }
 

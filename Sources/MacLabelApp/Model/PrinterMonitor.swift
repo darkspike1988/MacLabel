@@ -24,12 +24,17 @@ public final class PrinterMonitor {
     @ObservationIgnored private let printer: LabelPrinter
     @ObservationIgnored private let interval: Duration
     @ObservationIgnored private let busyBackoff: Duration
+    @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
     @ObservationIgnored private var visibleCount = 0
     @ObservationIgnored private var paused = false
     private var loop: Task<Void, Never>?
 
-    public init(printer: LabelPrinter, interval: Duration = .seconds(5), busyBackoff: Duration = .seconds(15)) {
+    public init(
+        printer: LabelPrinter, interval: Duration = .seconds(5), busyBackoff: Duration = .seconds(15),
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+    ) {
         self.printer = printer
+        self.sleep = sleep
         self.interval = interval
         self.busyBackoff = busyBackoff
     }
@@ -61,10 +66,11 @@ public final class PrinterMonitor {
     private func updateLoop() {
         let shouldRun = visibleCount > 0 && !paused && pollingEnabled
         if shouldRun, loop == nil {
+            let sleep = sleep
             loop = Task { [weak self] in
                 while !Task.isCancelled {
                     guard let wait = await self?.poll() else { return }
-                    try? await Task.sleep(for: wait)
+                    try? await sleep(wait)
                 }
             }
         } else if !shouldRun, let running = loop {

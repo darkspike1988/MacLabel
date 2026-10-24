@@ -3,7 +3,7 @@ import LabelMedia
 import SwiftUI
 
 /// The quick print in the menu bar (`MenuBarExtra` with the window style): a text field, the printer
-/// status, the loaded roll and Print (⌘Return). Return inserts a line break.
+/// status, the loaded roll and Print (⌘↩). Return inserts a line break.
 ///
 /// The panel keeps its own text. It prints it as a text-label `LabelDocument` through the shared
 /// `AppModel` (printer, remembered roll, `LabelPrinter`, `PrintPhase`), so the window's document
@@ -29,8 +29,10 @@ public struct MenuBarPanel: View {
     }
 
     /// Decides the main button. `preview` is the (possibly not yet finished) render of `document`.
-    nonisolated static func action(for document: LabelDocument, preview: PreviewResult?, bundle: Bundle = L10n.bundle) -> PanelAction {
-        if let preview, preview.missingRoll {
+    nonisolated static func action(
+        for document: LabelDocument, preview: PreviewResult?, hasRoll: Bool = true, bundle: Bundle = L10n.bundle
+    ) -> PanelAction {
+        if !hasRoll || preview?.missingRoll == true {
             return .disabled(String(localized: "No roll chosen", bundle: bundle))
         }
         if document.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -80,13 +82,17 @@ public struct MenuBarPanel: View {
                 model.monitor.visibilityChanged(visible: visible)
             }
         }
-        .onAppear { focused = true }
+        .onAppear {
+            focused = true
+            model.clearPrintOutcome()
+        }
+        .onChange(of: text) { model.clearPrintOutcome() }
         .task(id: PreviewKey(text: text, roll: model.roll, printerModel: model.effectiveModel.name)) {
             preview = await engine.update(document: document, roll: model.roll, model: model.effectiveModel)
         }
         .task {
             await model.refreshPrinters()
-            await model.monitor.refreshNow()
+            if model.monitor.pollingEnabled { await model.monitor.refreshNow() }
         }
     }
 
@@ -97,7 +103,7 @@ public struct MenuBarPanel: View {
                 .lineLimit(1)
                 .foregroundStyle(.secondary)
             Spacer()
-            Button(L10n.string("Change …"), action: openMainWindow)
+            Button(L10n.string("Change…"), action: openMainWindow)
                 .buttonStyle(.link)
                 .help(L10n.string("Choose the loaded roll in the main window"))
         }
@@ -105,12 +111,12 @@ public struct MenuBarPanel: View {
 
     @ViewBuilder
     private func statusLine(for action: PanelAction) -> some View {
-        if model.printPhase != .idle {
-            PrintStatusView(blockReason: nil)
-        } else if case .disabled(let reason) = action {
-            Label(reason, systemImage: "info.circle")
-                .foregroundStyle(.secondary)
+        // The reason why printing is impossible beats an old result; `PrintStatusView` decides.
+        if case .disabled(let reason) = action {
+            PrintStatusView(blockReason: reason)
                 .font(.callout)
+        } else {
+            PrintStatusView(blockReason: nil)
         }
     }
 
@@ -130,7 +136,7 @@ public struct MenuBarPanel: View {
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(action != .print || model.isPrinting)
             .frame(maxWidth: .infinity, alignment: .trailing)
-            .help(L10n.string("Print the text (⌘Return)"))
+            .help(L10n.string("Print the text (⌘↩)"))
         }
     }
 
@@ -139,7 +145,7 @@ public struct MenuBarPanel: View {
         if let reason = model.printBlockReason, model.selectedPrinter == nil || model.selectedPrinter?.model.family != .lwClassic {
             return .disabled(reason)
         }
-        return Self.action(for: document, preview: preview)
+        return Self.action(for: document, preview: preview, hasRoll: model.roll != nil)
     }
 
     private func openMainWindow() {

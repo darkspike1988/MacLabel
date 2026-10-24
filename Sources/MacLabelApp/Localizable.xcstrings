@@ -2099,23 +2099,6 @@
         }
       }
     },
-    "Change …": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change …"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ändern …"
-          }
-        }
-      }
-    },
     "Choose the loaded roll in the main window": {
       "extractionState": "manual",
       "localizations": {
@@ -2146,23 +2129,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Text zu lang – im Fenster öffnen"
-          }
-        }
-      }
-    },
-    "Print the text (⌘Return)": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Print the text (⌘Return)"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Text drucken (⌘Return)"
           }
         }
       }
@@ -2282,6 +2248,108 @@
           "stringUnit": {
             "state": "translated",
             "value": "Führe diesen Befehl im Terminal aus, um maclabel dort zu nutzen. App und Kommandozeilenwerkzeug merken sich Rollen getrennt."
+          }
+        }
+      }
+    },
+    "Change…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändern…"
+          }
+        }
+      }
+    },
+    "Print the text (⌘↩)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Print the text (⌘↩)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text drucken (⌘↩)"
+          }
+        }
+      }
+    },
+    "%@ (not connected)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (not connected)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (nicht verbunden)"
+          }
+        }
+      }
+    },
+    "Move MacLabel to the Applications folder first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move MacLabel to the Applications folder first."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewege MacLabel zuerst in den Programme-Ordner."
+          }
+        }
+      }
+    },
+    "The app and the command line tool remember rolls separately.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app and the command line tool remember rolls separately."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App und Kommandozeilenwerkzeug merken sich Rollen getrennt."
+          }
+        }
+      }
+    },
+    "Run this command in Terminal to use maclabel there. It asks for the administrator password. The app and the command line tool remember rolls separately.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run this command in Terminal to use maclabel there. It asks for the administrator password. The app and the command line tool remember rolls separately."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Führe diesen Befehl im Terminal aus, um maclabel dort zu nutzen. Er fragt nach dem Administratorpasswort. App und Kommandozeilenwerkzeug merken sich Rollen getrennt."
           }
         }
       }
