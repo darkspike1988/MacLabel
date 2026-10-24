@@ -187,3 +187,20 @@ final class Counter: @unchecked Sendable {
                                  using: t, topOfFormTimeout: .milliseconds(30), pollInterval: .zero)
     #expect(await t.written.suffix(2) == [0x1B, 0x45])
 }
+
+// After the TOF bit appears the LW450 still advances the label to the tear bar; DYMO's CUPS
+// pipeline adds ≥1 s between jobs. If MacLabel had to wait for TOF, it settles before printing.
+@Test func settlesAfterWaitingForTopOfForm() async throws {
+    let t = ScriptedTransport(statuses: [0x01, 0x03, 0x03])
+    let start = ContinuousClock.now
+    try await PrintService.print(req(1), using: t, topOfFormTimeout: .seconds(1), pollInterval: .zero,
+                                 settleAfterTopOfForm: .milliseconds(200))
+    #expect(ContinuousClock.now - start >= .milliseconds(200))
+}
+@Test func noSettleWhenAlreadyAtTopOfForm() async throws {
+    let t = ScriptedTransport(statuses: [0x03, 0x03])
+    let start = ContinuousClock.now
+    try await PrintService.print(req(1), using: t, topOfFormTimeout: .seconds(1), pollInterval: .zero,
+                                 settleAfterTopOfForm: .seconds(2))
+    #expect(ContinuousClock.now - start < .seconds(1))
+}

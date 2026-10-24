@@ -143,6 +143,7 @@ public enum PrintService {
         using transport: any PrinterTransport,
         topOfFormTimeout: Duration = .seconds(10),
         pollInterval: Duration = .milliseconds(100),
+        settleAfterTopOfForm: Duration = .seconds(1),
         progress: (@Sendable (Int, Int) -> Void)? = nil
     ) async throws {
         let (_, job) = try build(request)
@@ -151,7 +152,7 @@ public enum PrintService {
         do {
             try await waitUntilReady(
                 transport, needsTopOfForm: request.roll.kind == .dieCut,
-                timeout: topOfFormTimeout, pollInterval: pollInterval
+                timeout: topOfFormTimeout, pollInterval: pollInterval, settle: settleAfterTopOfForm
             )
 
             try await transport.write(LWClassicEncoder.jobHeader(job))
@@ -182,18 +183,40 @@ public enum PrintService {
     /// top-of-form bit is set: right after the previous job's form feed the LW450 reports
     /// 0x01 (ready, not at top of form) for about a second, and printing then would land
     /// too low on the label. DYMO's own language monitor waits the same way.
+    /// If the printer was still moving (TOF not yet set), it also waits `settle` after TOF
+    /// appears: the bit is raised when the sense hole passes, while the label is still being
+    /// advanced to the tear bar. Set `MACLABEL_DEBUG=1` to log every poll to stderr.
     static func waitUntilReady(
         _ transport: any PrinterTransport, needsTopOfForm: Bool,
-        timeout: Duration, pollInterval: Duration
+        timeout: Duration, pollInterval: Duration, settle: Duration
     ) async throws {
         let clock = ContinuousClock()
-        let deadline = clock.now + timeout
+        let start = clock.now
+        let deadline = start + timeout
+        var waited = false
         while true {
             let status = try await transport.status()
+            debugLog(String(format: "+%.3fs status 0x%02X", (clock.now - start).seconds, status.raw))
             guard status.canPrint else { throw PrintError.printerNotReady(status) }
-            if !needsTopOfForm || status.isTopOfForm { return }
+            if !needsTopOfForm || status.isTopOfForm {
+                if waited {
+                    debugLog("settle \(settle)")
+                    try await Task.sleep(for: settle)
+                }
+                return
+            }
+            waited = true
             guard clock.now < deadline else { throw PrintError.printerNotReady(status) }
             try await Task.sleep(for: pollInterval)
         }
     }
+
+    static func debugLog(_ message: @autoclosure () -> String) {
+        guard ProcessInfo.processInfo.environment["MACLABEL_DEBUG"] == "1" else { return }
+        FileHandle.standardError.write(Data("maclabel: \(message())\n".utf8))
+    }
+}
+
+private extension Duration {
+    var seconds: Double { Double(components.seconds) + Double(components.attoseconds) / 1e18 }
 }
