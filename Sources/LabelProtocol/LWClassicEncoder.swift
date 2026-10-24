@@ -25,12 +25,6 @@ public enum LWClassicEncoder {
     public static let resync = [UInt8](repeating: 0x1B, count: 156)
     public static let betweenLabels: [UInt8] = [0x1B, 0x47]
     public static let endOfJob: [UInt8] = [0x1B, 0x45]
-
-    /// Form feed at the end of a job. In graphics mode the printer is switched back to text
-    /// mode first, so the tear-off feed and the reverse feed of the next job use 300-lpi steps.
-    public static func endOfJob(quality: PrintQuality) -> [UInt8] {
-        quality == .graphics ? [0x1B, 0x68] + endOfJob : endOfJob
-    }
     public static let statusRequest: [UInt8] = [0x1B, 0x41]
     public static let versionRequest: [UInt8] = [0x1B, 0x56]
     /// `ESC @`: only used after an aborted job (with `resync`); never part of a normal header.
@@ -40,11 +34,7 @@ public enum LWClassicEncoder {
         var out = resync
         out += [0x1B, 0x51, 0x00, 0x00]
         out += [0x1B, 0x42, 0x00]
-        // Always start in text mode (ESC h): the automatic reverse feed after the previous
-        // job's ESC E runs on the first printed line, and in graphics mode the LW450 reverses
-        // too little (see docs/research/lw450-protocol.md §13, docs/simulator.md).
-        // Graphics labels switch to ESC i after their first line (see `label`).
-        out += [0x1B, 0x68]
+        out += [0x1B, job.quality == .text ? 0x68 : 0x69]
         let density: UInt8
         switch job.density {
         case .light: density = 0x63
@@ -65,26 +55,10 @@ public enum LWClassicEncoder {
         return out
     }
 
-    /// In `.graphics` the label's first 300-lpi line (rows 0 and 1 merged) is printed in text
-    /// mode, then `ESC i` and `ESC L` follow and the remaining 600-lpi rows from row 2 on.
-    public static func label(_ bitmap: MonochromeBitmap, lengthLines: Int?, quality: PrintQuality = .text) -> [UInt8] {
+    public static func label(_ bitmap: MonochromeBitmap, lengthLines: Int?) -> [UInt8] {
         let length = UInt16(clamping: lengthLines ?? 0xFFFF)
-        let lengthCommand: [UInt8] = [0x1B, 0x4C, UInt8(length >> 8), UInt8(length & 0xFF)]
-        var out: [UInt8] = []
-        var firstRow = 0
-        if quality == .graphics {
-            out += [0x1B, 0x44, UInt8(clamping: bitmap.bytesPerRow)]
-            var line = Array(bitmap.height > 0 ? bitmap.row(0) : ArraySlice(repeating: 0, count: bitmap.bytesPerRow))
-            if bitmap.height > 1 { for (i, b) in bitmap.row(1).enumerated() { line[i] |= b } }
-            out.append(0x16)
-            out += line
-            out += [0x1B, 0x69]
-            out += lengthCommand
-            firstRow = min(2, bitmap.height)
-        } else {
-            out += lengthCommand
-            out += [0x1B, 0x44, UInt8(clamping: bitmap.bytesPerRow)]
-        }
+        var out: [UInt8] = [0x1B, 0x4C, UInt8(length >> 8), UInt8(length & 0xFF)]
+        out += [0x1B, 0x44, UInt8(clamping: bitmap.bytesPerRow)]
 
         var blankRun = 0
         func flushBlank() {
@@ -94,7 +68,7 @@ public enum LWClassicEncoder {
                 blankRun -= k
             }
         }
-        for y in firstRow..<bitmap.height {
+        for y in 0..<bitmap.height {
             if bitmap.isRowBlank(y) {
                 blankRun += 1
                 continue
@@ -118,9 +92,9 @@ public enum LWClassicEncoder {
         var out = jobHeader(job)
         for (i, bitmap) in job.labels.enumerated() {
             if i > 0 { out += betweenLabels }
-            out += label(bitmap, lengthLines: job.labelLengthLines, quality: job.quality)
+            out += label(bitmap, lengthLines: job.labelLengthLines)
         }
-        out += endOfJob(quality: job.quality)
+        out += endOfJob
         return out
     }
 

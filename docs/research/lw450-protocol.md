@@ -272,3 +272,10 @@ Signiertes Test-App-Bundle (ad-hoc) mit `com.apple.security.app-sandbox` + `com.
 - **Korrektur im Encoder:** Jeder Auftrag beginnt im Textmodus (`ESC h`). Ein Grafik-Etikett druckt seine erste Zeile (Rasterzeilen 0+1) bei 300 lpi, schaltet dann auf `ESC i` und sendet erst danach `ESC L`. Vor dem abschließenden `ESC E` wird wieder auf `ESC h` geschaltet.
 - Im Simulator bleibt der Inhalt damit unter allen Spitzen-Hypothesen (exact, current-mode, mode-at-ff, auto-retract-Varianten; Abreißkante 8–14 mm) auf ±0,1 mm (Test `EncoderPositioningTests`).
 - **Am echten Gerät noch nicht bestätigt.**
+
+### 13.2 Ergebnis am Gerät und Weg A (24.10.2026)
+
+- Die Encoder-Korrektur aus §13.1 (Textmodus-Start und -Ende) ist **am Gerät widerlegt**: „Neu 1“ aus der Ruhe passte, „Neu 2“ (QR) und „Neu 3“ (EAN) direkt danach waren abgeschnitten. Die Änderung ist zurückgenommen, die modusabhängigen Hypothesen gelten als widerlegt.
+- Gesicherter Befund: Ein Auftrag, der wenige Sekunden nach dem `ESC E` des vorigen Auftrags beginnt, liegt zu tief. Das gilt unabhängig von Kompression, Modus, Etikettenlänge und Statuswartezeit. Nach längerer Pause passt er, und innerhalb eines Auftrags (`ESC G`) passt jedes Etikett.
+- **Weg A (vom Auftraggeber gewählt):** Alle Etiketten eines Druckvorgangs laufen in **einem** Auftrag, wie bei DYMO Connect. Zwischen dem `ESC E` eines Auftrags und dem nächsten Auftrag am selben Drucker hält MacLabel eine **Mindestpause** ein (`JobSpacing`, Zeitstempel pro Seriennummer in den User-Defaults).
+- Vorläufiger Wert: 10 s. Er muss am Gerät gemessen werden: einzelne Aufträge mit steigenden Pausen.

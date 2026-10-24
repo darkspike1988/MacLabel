@@ -59,7 +59,7 @@ import Testing
 
     @Test func logDecodesWithLongPause() throws {
         let log = try Self.log()
-        #expect(log.jobs.count == 24)
+        #expect(log.jobs.count == 27)
         #expect(log.jobs[0].pauseBefore == 600)
         #expect(log.jobs[2].pauseBefore == 3)
         #expect(log.jobs[5].file == nil)
@@ -68,7 +68,7 @@ import Testing
 
     @Test func replayProducesOneRowPerObservedLabel() throws {
         let rows = try ObservationHarness.replay(try Self.log(), hypothesis: .exact, loader: Fixtures.bytes)
-        #expect(rows.count == 28) // step6, step7, step8, ruler have 2 labels
+        #expect(rows.count == 31) // step6, step7, step8, ruler have 2 labels
         #expect(rows.allSatisfy { ($0.shiftMM ?? 0).magnitude < 1e-6 })
     }
 

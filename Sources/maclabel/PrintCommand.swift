@@ -143,7 +143,8 @@ struct PrintCommand: AsyncParsableCommand {
         _ = try PrintService.prepare(request)
         let connection = try USBPrinterConnection(printer: found)
         do {
-            try await PrintService.print(request, using: connection) { done, total in
+            let spacing = JobSpacing(clock: UserDefaultsFormFeedClock.standard(), serial: found.serialNumber)
+            try await PrintService.print(request, using: connection, spacing: spacing) { done, total in
                 writeStderr(localizedString("Label \(done)/\(total)…"))
             }
         } catch {
