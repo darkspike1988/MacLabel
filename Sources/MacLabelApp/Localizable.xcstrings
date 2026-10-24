@@ -2574,6 +2574,23 @@
           }
         }
       }
+    },
+    "Printing was cancelled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Printing was cancelled."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Druck wurde abgebrochen."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

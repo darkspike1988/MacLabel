@@ -28,7 +28,8 @@ struct PrintLabelIntent: AppIntent {
         do {
             let count = try await LabelPrinter.shared.printText(text, copies: copies, rollQuery: rollQuery)
             return .result(dialog: IntentDialog(stringLiteral: PrintPhase.finished(count).message ?? ""))
-        } catch let error as QuickPrintError {
+        } catch {
+            // `printText` throws only `QuickPrintError` (any other error, cancellation included, is mapped).
             throw IntentFailure(message: error.localizedDescription)
         }
     }
@@ -56,19 +57,14 @@ struct MacLabelShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: PrintLabelIntent(),
-            phrases: [
-                "Print a label with \(.applicationName)",
-                "Etikett mit \(.applicationName) drucken",
-            ],
+            // German phrases: AppShortcuts.xcstrings.
+            phrases: ["Print a label with \(.applicationName)"],
             shortTitle: "Print Label",
             systemImageName: "printer"
         )
         AppShortcut(
             intent: PrinterStatusIntent(),
-            phrases: [
-                "Printer status in \(.applicationName)",
-                "Druckerstatus in \(.applicationName)",
-            ],
+            phrases: ["Printer status in \(.applicationName)"],
             shortTitle: "Printer Status",
             systemImageName: "printer.dotmatrix"
         )

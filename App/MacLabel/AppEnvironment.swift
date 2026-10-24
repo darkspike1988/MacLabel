@@ -11,28 +11,27 @@ enum AppEnvironment {
     /// model: the text lands in its document and the window shows it when it appears.
     static let model = AppModel(printer: .shared)
 
-    /// `openWindow(id: "main")`, captured from the main window's environment.
-    static var openMainWindowAction: OpenWindowAction?
+    /// `openWindow`, captured from SwiftUI (see `OpenWindowCapture`). SwiftUI evaluates the app's
+    /// commands to build the main menu while the app launches, before AppKit delivers Service
+    /// requests or reopen events, so this is set whenever non-view code needs it.
+    static var openWindowAction: OpenWindowAction?
 
-    /// Opens the main window (or brings it to the front) and activates the app.
+    /// Opens the main window, or brings the existing one to the front, and activates the app.
+    /// Without a captured action (not expected after launch) it only activates the app.
     static func showMainWindow() {
-        if let openMainWindowAction {
-            openMainWindowAction(id: mainWindowID)
-        } else {
-            // Before any scene captured the action, the window is being built at launch anyway.
-            NSApp.windows.first { $0.identifier?.rawValue == mainWindowID }?.makeKeyAndOrderFront(nil)
-        }
+        openWindowAction?(id: mainWindowID)
         NSApp.activate()
     }
 }
 
-/// Hands the scene's `openWindow` to `AppEnvironment`, so non-view code (the Service) can open the window.
-struct MainWindowOpenerCapture: View {
+/// Hands SwiftUI's `openWindow` to `AppEnvironment`. Commands, unlike views, exist without any open
+/// window (the main menu is always built), so the action is available even when the window is closed.
+struct OpenWindowCapture: Commands {
     @Environment(\.openWindow) private var openWindow
 
-    var body: some View {
-        Color.clear
-            .accessibilityHidden(true)
-            .onAppear { AppEnvironment.openMainWindowAction = openWindow }
+    var body: some Commands {
+        // Re-evaluated with the menu; storing the same action again is harmless.
+        let _ = (AppEnvironment.openWindowAction = openWindow)
+        EmptyCommands()
     }
 }

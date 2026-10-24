@@ -13,6 +13,11 @@ for arg in "$@"; do
     esac
 done
 
+if ! command -v xcodegen >/dev/null 2>&1; then
+    print -u2 "Fehler: xcodegen wurde nicht gefunden. Bitte mit 'brew install xcodegen' installieren und erneut starten."
+    exit 69
+fi
+
 xcodegen generate --spec App/project.yml
 xcodebuild -project App/MacLabel.xcodeproj -scheme MacLabel -configuration Release \
     -derivedDataPath build/dd clean build
@@ -23,7 +28,7 @@ codesign --verify --deep --strict --verbose=2 build/MacLabel.app
 print "Entitlements of MacLabel.app:"
 codesign -d --entitlements - --xml build/MacLabel.app 2>/dev/null | plutil -p -
 print "Entitlements of the embedded maclabel:"
-codesign -d --entitlements - --xml build/MacLabel.app/Contents/MacOS/maclabel 2>/dev/null | plutil -p - 2>/dev/null || print "(none)"
+codesign -d --entitlements - --xml build/MacLabel.app/Contents/Helpers/maclabel 2>/dev/null | plutil -p - 2>/dev/null || print "(none)"
 
 if $install; then
     mkdir -p ~/Applications

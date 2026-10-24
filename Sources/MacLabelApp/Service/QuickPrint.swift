@@ -17,6 +17,17 @@ public enum QuickPrintError: Error, Equatable, Sendable {
     /// Busy, not ready, disconnected or printing: the printer's status text.
     case printerNotReady(String)
     case failed(String)
+
+    static var cancelledText: String { L10n.string("Printing was cancelled.") }
+
+    /// Any error as plain language: a `QuickPrintError` stays, cancellation says so, the rest uses its description.
+    public init(_ error: any Error) {
+        switch error {
+        case let error as QuickPrintError: self = error
+        case is CancellationError: self = .failed(Self.cancelledText)
+        default: self = .failed(error.localizedDescription)
+        }
+    }
 }
 
 extension QuickPrintError: LocalizedError {
@@ -47,8 +58,19 @@ extension QuickPrintError: LocalizedError {
 extension LabelPrinter {
     /// Prints `text` as `copies` text labels without any window: picks the default or first LW-Classic
     /// printer, the roll from `rollQuery` or the one remembered for that printer, refuses overflow and a
-    /// printer that is not ready. Returns the number of labels printed.
+    /// printer that is not ready. Returns the number of labels printed. Every error is a `QuickPrintError`.
+    /// A roll named in `rollQuery` is used for this print only; the remembered roll stays (Ruling A22).
     public func printText(
+        _ text: String, copies: Int, rollQuery: String?, preferredSerial: String? = AppSettings().defaultPrinterSerial
+    ) async throws(QuickPrintError) -> Int {
+        do {
+            return try await printTextThrowing(text, copies: copies, rollQuery: rollQuery, preferredSerial: preferredSerial)
+        } catch {
+            throw QuickPrintError(error)
+        }
+    }
+
+    private func printTextThrowing(
         _ text: String, copies: Int, rollQuery: String?, preferredSerial: String? = AppSettings().defaultPrinterSerial
     ) async throws -> Int {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw QuickPrintError.emptyText }
@@ -80,13 +102,13 @@ extension LabelPrinter {
         }
 
         let state = await state(for: target)
+        // A cancelled status query reports an error state; cancellation must win.
+        try Task.checkCancellation()
         guard case .ready = state else { throw QuickPrintError.printerNotReady(state.statusText) }
         do {
-            try await print(request, on: target) { _ in }
+            try await print(request, on: target, remember: query == nil) { _ in }
         } catch PrintError.overflow {
             throw QuickPrintError.overflow
-        } catch let error as PrintError {
-            throw QuickPrintError.failed(error.localizedDescription)
         }
         return request.contents.count
     }

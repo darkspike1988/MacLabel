@@ -117,3 +117,25 @@ import Testing
         #expect(!undo.canUndo)
     }
 }
+
+/// Before the Service or the menu bar panel replaces the text, typing in the window is ended, so the
+/// text view's own undo group closes first and ⌘Z undoes the replacement, then the typing.
+@Suite struct LoadTextEndsEditingTests {
+    @Test @MainActor func loadEndsEditingInTheMainWindow() {
+        _ = NSApplication.shared
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 300, height: 200),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let textView = NSTextView(frame: window.contentLayoutRect)
+        window.contentView?.addSubview(textView)
+        #expect(window.makeFirstResponder(textView))
+        #expect(window.firstResponder === textView)
+
+        let m = makeViewModel(printers: [], remembered: nil)
+        m.undoManager = window.undoManager
+        m.load(text: "Aus dem Dienst")
+        #expect(window.firstResponder !== textView)
+        #expect(m.document.text == "Aus dem Dienst")
+    }
+}

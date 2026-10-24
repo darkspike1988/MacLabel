@@ -33,6 +33,12 @@ Prüfen:
 - *Ablage › Drucken…* ist ausgegraut, wenn kein Drucker angeschlossen ist oder das Einstellungsfenster vorne liegt.
 - Text so lang machen, dass er nicht passt: ⌘P fragt „Trotzdem drucken?“. Hier „Abbrechen“ wählen.
 
+## 2a. Fenster schließen und wieder öffnen (kein Druck)
+
+- Hauptfenster schließen (⌘W): MacLabel läuft weiter, das Drucker-Symbol bleibt in der Menüleiste.
+- Auf das MacLabel-Symbol im Dock klicken: Das Hauptfenster erscheint wieder, mit dem bisherigen Inhalt.
+- Fenster erneut schließen, dann *Fenster › MacLabel* wählen: Das Fenster erscheint wieder, es entsteht kein zweites.
+
 ## 3. Menüleisten-Druck (ein Etikett)
 
 1. Auf das Drucker-Symbol in der Menüleiste klicken. Das Feld zeigt Druckerstatus und Rolle 11354.
@@ -55,7 +61,8 @@ Voraussetzung: Die App liegt in `~/Applications` (`scripts/build-app.sh --instal
 Prüfen:
 - Ein Etikett „Dienst-Test“.
 - Auch bei vorher beendeter MacLabel-App kommt der Text an (Schritt 1–3 mit beendeter App wiederholen, ohne zu drucken).
-- *Bearbeiten › Widerrufen* stellt das vorherige Etikett wieder her.
+- Auch bei geschlossenem Hauptfenster (App läuft, Fenster mit ⌘W geschlossen) öffnet der Dienst das Fenster mit dem Text (ohne zu drucken).
+- Widerrufen in der richtigen Reihenfolge (ohne zu drucken): Im Fenster „Alt“ tippen, dann in TextEdit „Neu“ markieren und den Dienst aufrufen. Im MacLabel-Fenster: ⌘Z zeigt wieder „Alt“, ein zweites ⌘Z nimmt das Tippen zurück, ⇧⌘Z stellt „Alt“ wieder her.
 
 ## 5. Kurzbefehl „Etikett drucken“ (ein Etikett)
 
@@ -66,6 +73,7 @@ Prüfen:
 - Ein Etikett „Kurzbefehl“, Rückmeldung „1 Etikett gedruckt.“; das MacLabel-Fenster öffnet sich dafür nicht.
 - Ohne Druck: Mit Rolle „Adresse“ (passt zu mehreren Größen) meldet der Kurzbefehl in Klartext, dass die Rolle nicht eindeutig ist. Mit sehr langem Text meldet er, dass der Text nicht passt.
 - Die Aktion „Druckerstatus“ liefert „LabelWriter 450 · bereit“.
+- Mit beendeter App (MacLabel vorher mit ⌘Q beenden): Von dir den Kurzbefehl „Etikett drucken“ noch einmal ausführen (ein Etikett). Erwartet: Es wird gedruckt. Notieren, ob dabei das MacLabel-Fenster aufgeht; das ist derzeit möglich (beim Start durch einen Kurzbefehl kann die App das Fenster nicht zuverlässig unterdrücken) und kein Fehler, aber bitte zurückmelden.
 
 ## 6. Adresse aus Kontakte (ein Etikett)
 

@@ -1,16 +1,61 @@
 import Foundation
+import LabelMedia
 import LabelTransport
+import MacLabelKit
 import Testing
 @testable import MacLabelApp
 
 /// The logic behind the "Print Label" and "Printer Status" App Intents (no window, no questions).
 @Suite struct QuickPrintTests {
     private func printer(_ list: [DiscoveredPrinter], remembered: String?, log: DeviceLog = DeviceLog(),
-                         openError: TransportError? = nil) -> LabelPrinter {
+                         openError: TransportError? = nil, blockFrom: Int? = nil) -> LabelPrinter {
         LabelPrinter(
-            factory: AppStubFactory(list: list, log: log, openError: openError),
+            factory: AppStubFactory(list: list, log: log, blockFrom: blockFrom, openError: openError),
             preferences: appPrefs(remembered: remembered), formFeedClock: AppNoStampClock()
         )
+    }
+
+    /// Ruling A22: a roll named in the shortcut is used once; the window's remembered roll stays.
+    @Test func explicitRollIsNotRemembered() async throws {
+        let p = printer([appLW450Printer], remembered: "11354")
+        #expect(try await p.printText("Keller", copies: 1, rollQuery: "99012") == 1)
+        #expect(await p.rememberedRoll(for: appLW450Printer)?.id == "11354")
+    }
+
+    @Test func rememberedRollStaysRememberedWithoutQuery() async throws {
+        let p = printer([appLW450Printer], remembered: "11354")
+        _ = try await p.printText("Keller", copies: 1, rollQuery: nil)
+        #expect(await p.rememberedRoll(for: appLW450Printer)?.id == "11354")
+    }
+
+    @Test func windowPrintsStillRememberTheRoll() async throws {
+        let p = printer([appLW450Printer], remembered: nil)
+        let roll = try #require(MediaCatalog.bundled.roll(id: "30321"))
+        let request = PrintRequest(contents: [.text(.init(text: "x"))], roll: roll, model: appLW450)
+        try await p.print(request, on: appLW450Printer) { _ in }
+        #expect(await p.rememberedRoll(for: appLW450Printer)?.id == "30321")
+    }
+
+    /// Cancelling (e.g. the shortcut is stopped) ends in a plain sentence, not "CancellationError error 1".
+    @Test func cancellationIsPlainLanguage() async {
+        // Every status query hangs until the task is cancelled.
+        let p = printer([appLW450Printer], remembered: "11354", blockFrom: 1)
+        let job = Task { () -> Result<Int, QuickPrintError> in
+            do throws(QuickPrintError) { return .success(try await p.printText("x", copies: 1, rollQuery: nil)) } catch { return .failure(error) }
+        }
+        try? await Task.sleep(for: .milliseconds(100))
+        job.cancel()
+        guard case .failure(let error) = await job.value else { Issue.record("printed despite cancel"); return }
+        #expect(error == .failed(QuickPrintError.cancelledText))
+        #expect(!error.localizedDescription.contains("CancellationError"))
+    }
+
+    @Test func otherErrorsBecomeFailedWithTheirDescription() {
+        #expect(QuickPrintError(CancellationError()) == .failed(QuickPrintError.cancelledText))
+        #expect(QuickPrintError(PrintError.nothingToPrint) == .failed(PrintError.nothingToPrint.localizedDescription))
+        #expect(QuickPrintError(QuickPrintError.noRoll) == .noRoll)
+        let de = localizedBundle(preferred: ["de"])
+        #expect(String(localized: "Printing was cancelled.", bundle: de) == "Der Druck wurde abgebrochen.")
     }
 
     @Test func printsWithRememberedRoll() async throws {
@@ -43,7 +88,7 @@ import Testing
         do {
             _ = try await p.printText("x", copies: 1, rollQuery: "address")
             Issue.record("expected an error")
-        } catch let error as QuickPrintError {
+        } catch {
             guard case .ambiguousRoll(let query, let ids) = error else { Issue.record("\(error)"); return }
             #expect(query == "address" && ids.count > 1)
             #expect(error.localizedDescription.contains(ids[0]))
@@ -63,11 +108,9 @@ import Testing
         do {
             _ = try await p.printText("x", copies: 1, rollQuery: nil)
             Issue.record("expected an error")
-        } catch let error as QuickPrintError {
+        } catch {
             guard case .printerNotReady(let text) = error else { Issue.record("\(error)"); return }
             #expect(text.contains("LabelWriter 450"))
-        } catch {
-            Issue.record("unexpected \(error)")
         }
     }
 

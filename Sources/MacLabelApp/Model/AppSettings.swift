@@ -45,7 +45,7 @@ public struct AppSettings {
         bundlePath: String = Bundle.main.bundlePath, homebrewBinWritable: Bool = AppSettings.homebrewBinWritable
     ) -> CLIInstall {
         if bundlePath.contains("/AppTranslocation/") { return .moveFirst }
-        let tool = "'" + (bundlePath + "/Contents/MacOS/maclabel").replacing("'", with: "'\\''") + "'"
+        let tool = "'" + (bundlePath + "/Contents/Helpers/maclabel").replacing("'", with: "'\\''") + "'"
         if homebrewBinWritable {
             return .homebrew("ln -sf \(tool) /opt/homebrew/bin/maclabel")
         }

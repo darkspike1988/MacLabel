@@ -98,9 +98,12 @@ public actor LabelPrinter {
     /// Prints all labels of `request` as one job. Waits for the gate (FIFO), then for the
     /// `JobSpacing` pause after the previous job's form feed (device not open meanwhile; reported
     /// once as `.positioning`), then prints. The transport is closed on success, error and cancellation.
+    /// `remember`: store the roll as this printer's roll afterwards (window and menu bar: yes; an
+    /// App Intent with an explicitly named roll: no, Ruling A22).
     public func print(
         _ request: PrintRequest,
         on printer: DiscoveredPrinter,
+        remember: Bool = true,
         onPhase: @escaping @Sendable (PrintPhaseEvent) -> Void
     ) async throws {
         guard printer.model.family == .lwClassic, request.model == printer.model else {
@@ -135,7 +138,7 @@ public actor LabelPrinter {
             throw error
         }
         await transport.close()
-        remember(request.roll, for: printer)
+        if remember { self.remember(request.roll, for: printer) }
     }
 
     /// Waits until no other `print`/`state` uses a device; waiters are served in arrival order.

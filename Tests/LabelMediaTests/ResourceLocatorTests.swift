@@ -3,11 +3,12 @@ import Testing
 @testable import LabelMedia
 
 @Suite struct ResourceLocatorTests {
-    @Test func locatorFindsBundleBesideSymlinkedExecutable() throws {
+    /// MacLabel.app keeps its CLI in `Contents/Helpers`; `Contents/MacOS` works the same way.
+    @Test(arguments: ["Helpers", "MacOS"]) func locatorFindsBundleBesideSymlinkedExecutable(_ folder: String) throws {
         let fm = FileManager.default
         let root = fm.temporaryDirectory.appendingPathComponent("locator-\(UUID().uuidString)")
         defer { try? fm.removeItem(at: root) }
-        let macOS = root.appendingPathComponent("Contents/MacOS")
+        let macOS = root.appendingPathComponent("Contents/\(folder)")
         let bundleDir = root.appendingPathComponent("Contents/Resources/LocatorTest.bundle")
         try fm.createDirectory(at: macOS, withIntermediateDirectories: true)
         try fm.createDirectory(at: bundleDir, withIntermediateDirectories: true)

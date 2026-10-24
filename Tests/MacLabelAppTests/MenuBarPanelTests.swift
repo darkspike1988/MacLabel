@@ -82,17 +82,17 @@ private let okPreview = PreviewResult(pages: [], totalLabels: 1, overflowIndices
 
     @Test func homebrewBranchNeedsNoAdministrator() {
         #expect(AppSettings.cliInstall(bundlePath: "/Applications/MacLabel.app", homebrewBinWritable: true)
-            == .homebrew("ln -sf '/Applications/MacLabel.app/Contents/MacOS/maclabel' /opt/homebrew/bin/maclabel"))
+            == .homebrew("ln -sf '/Applications/MacLabel.app/Contents/Helpers/maclabel' /opt/homebrew/bin/maclabel"))
     }
 
     @Test func systemBranchUsesSudoAndCreatesTheDirectory() {
         #expect(AppSettings.cliInstall(bundlePath: "/Applications/MacLabel.app", homebrewBinWritable: false)
-            == .systemWide("sudo mkdir -p /usr/local/bin && sudo ln -sf '/Applications/MacLabel.app/Contents/MacOS/maclabel' /usr/local/bin/maclabel"))
+            == .systemWide("sudo mkdir -p /usr/local/bin && sudo ln -sf '/Applications/MacLabel.app/Contents/Helpers/maclabel' /usr/local/bin/maclabel"))
     }
 
     @Test func pathWithSpacesAndApostropheIsQuoted() {
         let install = AppSettings.cliInstall(bundlePath: "/Users/o'neil/My Apps/MacLabel.app", homebrewBinWritable: true)
-        #expect(install == .homebrew("ln -sf '/Users/o'\\''neil/My Apps/MacLabel.app/Contents/MacOS/maclabel' /opt/homebrew/bin/maclabel"))
+        #expect(install == .homebrew("ln -sf '/Users/o'\\''neil/My Apps/MacLabel.app/Contents/Helpers/maclabel' /opt/homebrew/bin/maclabel"))
     }
 
     @Test func translocatedAppMustMoveFirst() {

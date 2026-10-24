@@ -40,9 +40,6 @@ targets:
     settings:
       base:
         PRODUCT_NAME: MacLabel
-        # Not "MacLabel": the volume is case-insensitive, so it would collide with the embedded
-        # Contents/MacOS/maclabel (the CLI). The bundle and menu name stay "MacLabel".
-        EXECUTABLE_NAME: MacLabelApp
         PRODUCT_BUNDLE_IDENTIFIER: io.github.darkspike1988.maclabel
         INFOPLIST_FILE: MacLabel/Info.plist
         GENERATE_INFOPLIST_FILE: NO
@@ -54,12 +51,15 @@ targets:
     dependencies:
       - package: MacLabelKit
         product: MacLabelApp
-      # The command line tool, embedded as Contents/MacOS/maclabel and signed (inside out) on copy.
+      # The command line tool, embedded as Contents/Helpers/maclabel and signed (inside out) on copy.
+      # Not Contents/MacOS: on a case-insensitive volume "maclabel" there is the app's own
+      # executable "MacLabel" (Ruling A21).
       - target: maclabel-cli
         embed: true
         codeSign: true
         copy:
-          destination: executables
+          destination: wrapper
+          subpath: Contents/Helpers
   maclabel-cli:
     type: tool
     platform: macOS

@@ -48,12 +48,13 @@ import Testing
         FileManager.default.temporaryDirectory.appendingPathComponent("maclabel-\(UUID().uuidString)-\(name)")
     }
 
-    /// The CLI inside an app bundle, started by bare name through a symlink on PATH, must find its resources.
-    @Test func resourcesFoundViaSymlinkOnPath() throws {
+    /// The CLI inside an app bundle (`Contents/Helpers` in MacLabel.app, `Contents/MacOS` also supported),
+    /// started by bare name through a symlink on PATH, must find its resources.
+    @Test(arguments: ["Helpers", "MacOS"]) func resourcesFoundViaSymlinkOnPath(_ folder: String) throws {
         let fm = FileManager.default
         let root = fm.temporaryDirectory.appendingPathComponent("maclabel-app-\(UUID().uuidString)")
         defer { try? fm.removeItem(at: root) }
-        let macOS = root.appendingPathComponent("X.app/Contents/MacOS")
+        let macOS = root.appendingPathComponent("X.app/Contents/\(folder)")
         let resources = root.appendingPathComponent("X.app/Contents/Resources")
         let bin = root.appendingPathComponent("bin")
         for dir in [macOS, resources, bin] { try fm.createDirectory(at: dir, withIntermediateDirectories: true) }

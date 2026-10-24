@@ -2,8 +2,9 @@ import Foundation
 
 /// Finds SwiftPM resource bundles without the `fatalError` of the generated `Bundle.module`.
 ///
-/// A command-line tool embedded in an app (or reached through a symlink) has its resources in
-/// `Contents/Resources` next to `Contents/MacOS`, where the generated accessor never looks.
+/// A command-line tool embedded in an app (MacLabel.app: `Contents/Helpers/maclabel`, reached through a
+/// symlink) has its resources in `Contents/Resources` next to `Contents/Helpers` (or `Contents/MacOS`),
+/// where the generated accessor never looks.
 public enum ResourceLocator {
     /// Order: bundles beside the main bundle, `../Resources/<name>.bundle` and `<name>.bundle` relative to the
     /// symlink-resolved executable, and only then `fallback()` (the caller's `Bundle.module`, which aborts when

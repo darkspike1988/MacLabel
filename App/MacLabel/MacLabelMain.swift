@@ -15,11 +15,11 @@ struct MacLabelMain: App {
         Window(Text(verbatim: "MacLabel"), id: AppEnvironment.mainWindowID) {
             MainWindow()
                 .environment(model)
-                .background { MainWindowOpenerCapture() }
         }
         .defaultLaunchBehavior(.presented)
         .commands {
             MacLabelCommands()
+            OpenWindowCapture()
         }
 
         MenuBarExtra("MacLabel", systemImage: "printer", isInserted: $showMenuBarExtra) {

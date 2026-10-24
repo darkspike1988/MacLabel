@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import LabelMedia
 import LabelProtocol
@@ -172,6 +173,7 @@ public final class AppModel {
         updated.layout = .text
         updated.text = text
         guard updated != document else { return }
+        endEditingInWindow()
         let previous = document
         document = updated
         if let undoManager {
@@ -179,6 +181,15 @@ public final class AppModel {
         } else {
             pendingUndo = previous
         }
+    }
+
+    /// Ends typing in the main window (the window whose undo manager is ours), so the text view's
+    /// typing undo group is closed before the replacement is registered as its own step.
+    private func endEditingInWindow() {
+        guard let undoManager, let app = NSApp,
+              let window = app.windows.first(where: { $0.undoManager === undoManager }) else { return }
+        (window.firstResponder as? NSTextView)?.breakUndoCoalescing()
+        window.makeFirstResponder(nil)
     }
 
     private func registerPendingUndo() {

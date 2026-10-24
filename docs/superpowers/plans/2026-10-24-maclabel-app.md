@@ -371,7 +371,7 @@ Die mit Kommentar beschriebenen Rümpfe werden mit den genannten Erwartungen aus
     - Standarddrucker (Picker bei mehreren Druckern)
     - „In der Menüleiste anzeigen“ (Bool, `@AppStorage("showMenuBarExtra")`, Standard true)
     - „Druckerstatus automatisch abfragen“ (`@AppStorage("statusPolling")`, Standard true)
-    - Abschnitt „Kommandozeile“ mit kopierbarem Befehl `ln -sf "<Bundle-Pfad>/Contents/MacOS/maclabel" /usr/local/bin/maclabel` und dem Hinweis, dass App und CLI getrennte gemerkte Rollen haben
+    - Abschnitt „Kommandozeile“ mit kopierbarem Befehl `ln -sf "<Bundle-Pfad>/Contents/Helpers/maclabel" /usr/local/bin/maclabel` (geändert: Ruling A21, Namenskollision auf APFS) und dem Hinweis, dass App und CLI getrennte gemerkte Rollen haben
   - `public struct AppSettings` kapselt die Schlüssel.
   - Panel-Logik als testbare Funktion `MenuBarPanel.action(for document: LabelDocument, preview: PreviewResult?) -> PanelAction` (`.print`, `.openWindow`, `.disabled(String)`).
 
@@ -406,7 +406,7 @@ Die mit Kommentar beschriebenen Rümpfe werden mit den genannten Erwartungen aus
   - Target `maclabel-cli` (tool):
     - Sources `../Sources/maclabel`, Deps `MacLabelKit` + `ArgumentParser`, `PRODUCT_NAME: maclabel`, eigene leere Entitlements ohne Sandbox
     - Ressourcen-Bundles (`MacLabelKit_*.bundle`) per Copy-Files-Phase nach `Contents/Resources`
-    - Wird als Abhängigkeit von `MacLabel` mit Copy-Files-Phase nach `Contents/MacOS` eingebettet, signiert mit `CodeSignOnCopy`
+    - Wird als Abhängigkeit von `MacLabel` mit Copy-Files-Phase nach `Contents/Helpers` eingebettet (geändert: Ruling A21, Namenskollision auf APFS), signiert mit `CodeSignOnCopy`
 - **Info.plist** (beide Texte de/en über InfoPlist-Strings):
   - `NSServices`: `NSMenuItem.default = "Mit MacLabel drucken"`, `NSMessage = printLabel`, `NSSendTypes = [NSStringPboardType, public.utf8-plain-text]`, `NSPortName = MacLabel`
   - `NSContactsUsageDescription`
@@ -427,7 +427,7 @@ Die mit Kommentar beschriebenen Rümpfe werden mit den genannten Erwartungen aus
 
 - [ ] **Step 1: Verifikations-Skript zuerst:** `scripts/verify-app.sh` prüft am gebauten Bundle und schlägt fehl, wenn etwas fehlt:
   1. `codesign -d --entitlements -` zeigt genau die vier erlaubten Entitlements und **kein** `network`.
-  2. `Contents/MacOS/maclabel` existiert. Über einen Symlink in einem Temp-Verzeichnis liefert `maclabel rolls search 32x57` Exit 0 und „11354“.
+  2. `Contents/Helpers/maclabel` existiert (geändert: Ruling A21, Namenskollision auf APFS). Über einen Symlink in einem Temp-Verzeichnis liefert `maclabel rolls search 32x57` Exit 0 und „11354“.
   3. `plutil -extract NSServices` ist vorhanden.
   4. `grep -rE "URLSession|import Network" Sources App` findet nichts.
 - [ ] **Step 2: `scripts/verify-app.sh` vor dem Bauen → FAIL** (Bundle fehlt).

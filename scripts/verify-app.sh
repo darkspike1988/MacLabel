@@ -34,15 +34,20 @@ fi
 if codesign --verify --deep --strict "$APP" 2>"$tmp/verify.txt"; then pass "codesign --verify --deep --strict"
 else fail "codesign verify: $(cat "$tmp/verify.txt")"; fi
 
-# The app's own executable must survive next to the CLI (case-insensitive volume: not "MacLabel").
+# The app's own executable is MacLabel and the only file in Contents/MacOS (the CLI lives in
+# Contents/Helpers: "maclabel" next to "MacLabel" would be the same file on a case-insensitive volume).
 exe=$(plutil -extract CFBundleExecutable raw -o - "$APP/Contents/Info.plist" 2>/dev/null)
-if [[ -n "$exe" && "${exe:l}" != maclabel && -x "$APP/Contents/MacOS/$exe" ]]; then pass "app executable Contents/MacOS/$exe"
-else fail "app executable '$exe' missing or clashes with the CLI"; fi
+others=$(ls "$APP/Contents/MacOS" 2>/dev/null | grep -vx MacLabel)
+if [[ "$exe" == MacLabel && -x "$APP/Contents/MacOS/MacLabel" && -z "$others" ]]; then
+    pass "app executable Contents/MacOS/MacLabel, nothing else in Contents/MacOS"
+else
+    fail "CFBundleExecutable '$exe', Contents/MacOS also has: ${others:-nothing}"
+fi
 
 # 2. Embedded CLI, not sandboxed, works through a symlink from outside the bundle.
-CLI="$APP/Contents/MacOS/maclabel"
+CLI="$APP/Contents/Helpers/maclabel"
 if [[ -x "$CLI" ]]; then
-    pass "Contents/MacOS/maclabel exists"
+    pass "Contents/Helpers/maclabel exists"
     codesign -d --entitlements "$tmp/cli.xml" --xml "$CLI" 2>/dev/null
     if [[ -s "$tmp/cli.xml" ]] && grep -q "app-sandbox" "$tmp/cli.xml"; then fail "CLI is sandboxed"
     else pass "CLI has no sandbox entitlement"; fi
@@ -51,7 +56,7 @@ if [[ -x "$CLI" ]]; then
     if [[ $code -eq 0 && "$out" == *11354* ]]; then pass "symlinked 'maclabel rolls search 32x57' finds 11354"
     else fail "symlinked CLI: exit $code, output: $out"; fi
 else
-    fail "Contents/MacOS/maclabel missing"
+    fail "Contents/Helpers/maclabel missing"
 fi
 
 # 3. Service entry.

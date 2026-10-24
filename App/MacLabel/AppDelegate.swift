@@ -1,12 +1,24 @@
 import AppKit
 import MacLabelApp
 
-/// Registers the "Print with MacLabel" Service (`NSServices` in Info.plist, message `printLabel`).
+/// Keeps the app running without windows (menu bar extra, Service, intents), reopens the main
+/// window from the Dock and registers the "Print with MacLabel" Service (`NSServices`, message `printLabel`).
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.servicesProvider = self
         NSUpdateDynamicServices()
+    }
+
+    /// Closing the window keeps MacLabel running; the menu bar extra, the Service and the intents stay available.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    /// A Dock click without a visible window opens the main window.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { AppEnvironment.showMainWindow() }
+        return false
     }
 
     /// Services entry point (`printLabel:userData:error:`): the selected text becomes the window's
