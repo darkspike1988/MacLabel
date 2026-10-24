@@ -105,7 +105,12 @@ public final class LW450Simulator {
     /// Executes one job. `pauseBefore`: seconds since the end of the previous job.
     @discardableResult
     public func run(_ bytes: [UInt8], pauseBefore: TimeInterval = 0, transport: Transport? = nil, name: String? = nil) throws -> [LabelMeasurement] {
-        let commands = try LWClassicParser.parse(bytes)
+        run(parsed: try LWClassicParser.parse(bytes), pauseBefore: pauseBefore, transport: transport, name: name)
+    }
+
+    /// Executes an already parsed job (lets callers parse a fixture once and replay it often).
+    @discardableResult
+    public func run(parsed commands: [ParsedCommand], pauseBefore: TimeInterval = 0, transport: Transport? = nil, name: String? = nil) -> [LabelMeasurement] {
         let jobIndex = result.jobs.count
         let jobName = name ?? "job\(jobIndex + 1)"
         let jobStart = x
