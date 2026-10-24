@@ -21,6 +21,7 @@ let package = Package(
             dependencies: ["LabelProtocol"],
             linkerSettings: [.linkedFramework("IOUSBHost"), .linkedFramework("IOKit")]
         ),
+        .target(name: "LabelSimulator", dependencies: ["LabelProtocol", "LabelMedia"]),
         .target(
             name: "MacLabelKit",
             dependencies: ["LabelProtocol", "LabelMedia", "LabelRender", "LabelTransport"],
@@ -30,6 +31,7 @@ let package = Package(
             name: "maclabel",
             dependencies: [
                 "MacLabelKit",
+                "LabelSimulator",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
@@ -37,6 +39,11 @@ let package = Package(
         .testTarget(name: "LabelMediaTests", dependencies: ["LabelMedia"]),
         .testTarget(name: "LabelRenderTests", dependencies: ["LabelRender", "LabelMedia", "LabelProtocol"]),
         .testTarget(name: "LabelTransportTests", dependencies: ["LabelTransport"]),
+        .testTarget(
+            name: "LabelSimulatorTests",
+            dependencies: ["LabelSimulator", "LabelProtocol", "LabelMedia"],
+            resources: [.copy("Fixtures")]
+        ),
         .testTarget(name: "MacLabelKitTests", dependencies: ["MacLabelKit"]),
         .testTarget(name: "maclabelCLITests", dependencies: ["maclabel", "MacLabelKit", "LabelMedia", "LabelTransport"]),
     ],
