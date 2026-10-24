@@ -25,11 +25,12 @@ import Testing
         #expect(r2 != nil)
     }
 
-    @Test @MainActor func capsPagesAt50() async {
-        let e = PreviewEngine(debounce: .zero)
+    @Test @MainActor func capsPagesAtMax() async {
+        // Debug renders cost ~60 ms/page, so the cap is exercised with a small maxPages (default is 50).
+        let e = PreviewEngine(debounce: .zero, maxPages: 5)
         var d = LabelDocument(); d.text = "x"; d.copies = 120
         let r = await e.update(document: d, roll: roll, model: lw450)!
-        #expect(r.pages.count == 50 && r.totalLabels == 120 && r.error == nil)
+        #expect(r.pages.count == 5 && r.totalLabels == 120 && r.error == nil)
     }
 
     @Test @MainActor func overflowReported() async {
@@ -64,5 +65,26 @@ import Testing
         var d = LabelDocument(); d.layout = .image
         let r = await e.update(document: d, roll: roll, model: lw450)!
         #expect(r.error != nil && r.pages.isEmpty)
+    }
+
+    @Test @MainActor func firstPageDeliveredBeforeFinalResult() async {
+        let e = PreviewEngine(debounce: .zero, maxPages: 5)
+        var d = LabelDocument(); d.text = "x"; d.copies = 120
+        var order: [String] = []
+        var first: PreviewResult?
+        let final = await e.update(document: d, roll: roll, model: lw450) { r in
+            order.append("first"); first = r
+        }
+        order.append("final")
+        #expect(order == ["first", "final"])
+        #expect(first?.pages.count == 1 && first?.totalLabels == 120)
+        #expect(final?.pages.count == 5)
+    }
+
+    @Test @MainActor func errorKeepsTotalLabels() async {
+        let e = PreviewEngine(debounce: .zero)
+        var d = LabelDocument(); d.layout = .barcode; d.symbology = .ean13; d.barcodeValue = "abc"; d.copies = 7
+        let r = await e.update(document: d, roll: roll, model: lw450)!
+        #expect(r.error != nil && r.totalLabels == 7)
     }
 }

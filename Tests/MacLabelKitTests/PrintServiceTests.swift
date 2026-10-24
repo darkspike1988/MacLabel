@@ -248,3 +248,18 @@ final class MemoryFormFeedClock: FormFeedClock, @unchecked Sendable {
     let now = Date(); c.recordFormFeed(serial: "X", at: now)
     #expect(abs(c.lastFormFeed(serial: "X")!.timeIntervalSince(now)) < 0.01)
 }
+
+@Test func renderMatchesPrepareRenders() throws {
+    let a = try PrintService.render(req(3))
+    let b = try PrintService.prepare(req(3)).renders
+    #expect(a.count == 3 && a.map(\.bitmap) == b.map(\.bitmap))
+}
+
+@Test func renderStopsWhenTaskCancelled() async {
+    let task = Task.detached { () -> Bool in
+        while !Task.isCancelled { await Task.yield() }
+        do { _ = try PrintService.render(req(5)); return false } catch is CancellationError { return true } catch { return false }
+    }
+    task.cancel()
+    #expect(await task.value)
+}

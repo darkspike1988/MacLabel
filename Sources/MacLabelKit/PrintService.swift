@@ -100,6 +100,12 @@ public enum PrintService {
         return PreparedJob(renders: renders, bytes: LWClassicEncoder.encode(job))
     }
 
+    /// Renders without encoding printer bytes. Cooperatively cancellable: throws `CancellationError`
+    /// between labels when the calling task is cancelled.
+    public static func render(_ request: PrintRequest) throws -> [RenderResult] {
+        try build(request).0
+    }
+
     private static func build(_ request: PrintRequest) throws -> ([RenderResult], LWClassicJob) {
         guard !request.contents.isEmpty else { throw PrintError.nothingToPrint }
         let model = request.model, roll = request.roll
@@ -122,6 +128,7 @@ public enum PrintService {
 
         var renders: [RenderResult] = []
         for (index, content) in request.contents.enumerated() {
+            try Task.checkCancellation()
             let result: RenderResult
             do {
                 result = try LabelRenderer.render(content, geometry: geometry)
