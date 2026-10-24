@@ -212,6 +212,7 @@ private func model(
     m.document.text = "x"
     let job = Task { await m.print(allowOverflow: false) }
     await waitFor { if case .positioning = m.printPhase { true } else { false } }
+    await waitForAsync { await sleeper.sleepCount == 1 }
     #expect(m.printPhase == .positioning(remaining: .seconds(3)))
     #expect(await sleeper.requests == [.seconds(3)])
     await sleeper.advance()

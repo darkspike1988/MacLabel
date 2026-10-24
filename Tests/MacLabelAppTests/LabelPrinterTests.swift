@@ -102,7 +102,7 @@ private let lw450 = PrinterModel.lookup(productID: 0x20)!
 private let lw450Printer = DiscoveredPrinter(id: 1, model: lw450, serialNumber: "S1", locationID: nil)
 private let r11354 = MediaCatalog.bundled.roll(sku: "11354")!
 
-private func tmpPrefs() -> RollPreferences { RollPreferences(defaults: UserDefaults(suiteName: UUID().uuidString)!) }
+private func tmpPrefs() -> RollPreferences { RollPreferences(defaults: tempDefaults()) }
 private func request() -> PrintRequest { PrintRequest(contents: [.text(.init(text: "Hallo"))], roll: r11354, model: lw450) }
 
 @Test func noPrinterState() async {

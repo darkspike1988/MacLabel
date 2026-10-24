@@ -32,6 +32,7 @@ private enum TempDefaultsRegistry {
         let name = "maclabel-test-\(UUID().uuidString)"
         lock.withLock {
             if names.isEmpty {
+                removeLeftoversFromEarlierRuns()
                 atexit { TempDefaultsRegistry.cleanup() }
             }
             names.append(name)
@@ -39,9 +40,23 @@ private enum TempDefaultsRegistry {
         return UserDefaults(suiteName: name)!
     }
 
+    /// cfprefsd may write a suite's plist after the test process exits, so the
+    /// next run deletes what earlier runs left behind.
+    private static func removeLeftoversFromEarlierRuns() {
+        let prefs = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Preferences")
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: prefs.path)) ?? []
+        for file in files where file.hasPrefix("maclabel-test-") && file.hasSuffix(".plist") {
+            try? FileManager.default.removeItem(at: prefs.appending(path: file))
+        }
+    }
+
     static func cleanup() {
         let all = lock.withLock { names }
-        for name in all { UserDefaults().removePersistentDomain(forName: name) }
+        let prefs = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Preferences")
+        for name in all {
+            UserDefaults().removePersistentDomain(forName: name)
+            try? FileManager.default.removeItem(at: prefs.appending(path: "\(name).plist"))
+        }
     }
 }
 
