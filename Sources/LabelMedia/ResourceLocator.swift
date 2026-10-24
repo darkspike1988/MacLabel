@@ -20,7 +20,7 @@ public enum ResourceLocator {
         _NSGetExecutablePath(nil, &size)
         var buffer = [CChar](repeating: 0, count: Int(size))
         if _NSGetExecutablePath(&buffer, &size) == 0 {
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self))
         }
         return URL(fileURLWithPath: CommandLine.arguments[0])
     }
