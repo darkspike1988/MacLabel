@@ -9,7 +9,7 @@ struct PrintersCommand: ParsableCommand {
     )
 
     func run() throws {
-        let printers = USBPrinterDiscovery.printers()
+        let printers = printerFactory.printers()
         guard !printers.isEmpty else {
             throw fail(PrintError.transport(.notFound).localizedDescription, code: Exit.noPrinter)
         }

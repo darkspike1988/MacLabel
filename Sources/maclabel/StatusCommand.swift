@@ -12,11 +12,11 @@ struct StatusCommand: AsyncParsableCommand {
     var printer: String?
 
     func run() async throws {
-        let found = try PrinterSelection.select(serial: printer)
+        let found = try selectPrinter(serial: printer)
         let status: LWStatus
         let version: LWVersion?
         do {
-            let connection = try USBPrinterConnection(printer: found)
+            let connection = try printerFactory.open(found)
             do {
                 status = try await connection.status()
                 version = try await connection.version()

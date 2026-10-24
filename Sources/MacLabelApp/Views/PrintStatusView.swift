@@ -1,0 +1,67 @@
+import SwiftUI
+
+/// What the print bar says between copies and the Print button: why printing is not possible,
+/// the positioning pause, progress with Cancel, or the outcome of the last print.
+struct PrintStatusView: View {
+    @Environment(AppModel.self) private var model
+    let blockReason: String?
+
+    /// An active print shows its progress; otherwise the reason why printing is impossible beats an old outcome.
+    nonisolated static func showsBlockReason(phase: PrintPhase, blockReason: String?) -> Bool {
+        blockReason != nil && !phase.isActive
+    }
+
+    /// The positioning pause and the running print both offer Cancel (same action).
+    nonisolated static func offersCancel(for phase: PrintPhase) -> Bool {
+        phase.isActive
+    }
+
+    var body: some View {
+        let phase = model.printPhase
+        if Self.showsBlockReason(phase: phase, blockReason: blockReason), let blockReason {
+            Label(blockReason, systemImage: "info.circle")
+                .foregroundStyle(.secondary)
+        } else if Self.offersCancel(for: phase) {
+            HStack(spacing: 12) {
+                status(for: phase)
+                Button(L10n.string("Cancel"), action: model.cancelPrint)
+                    .keyboardShortcut(.cancelAction)
+            }
+        } else {
+            status(for: phase)
+        }
+    }
+
+    @ViewBuilder
+    private func status(for phase: PrintPhase) -> some View {
+        switch phase {
+        case .positioning(let remaining):
+            PositioningProgress(remaining: remaining, message: phase.message ?? "")
+                .id(remaining)
+        case .printing(let done, let total):
+            ProgressView(value: Double(done), total: Double(max(total, 1))) {
+                Text(phase.message ?? "")
+            }
+            .frame(maxWidth: 260)
+        case .finished:
+            Label {
+                Text(phase.message ?? "")
+            } icon: {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            }
+        case .cancelled:
+            Label(phase.message ?? "", systemImage: "xmark.circle")
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        case .failed:
+            Label {
+                Text(phase.message ?? "").lineLimit(2)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+            }
+        case .idle:
+            // Keeps the bar's middle flexible, so Print stays at the trailing edge.
+            Color.clear.frame(height: 0)
+        }
+    }
+}

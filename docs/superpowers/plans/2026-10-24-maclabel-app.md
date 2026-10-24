@@ -31,6 +31,8 @@
   - Render-Debounce 100 ms; ein neuer Auftrag bricht den alten ab.
   - Höchstens die ersten 50 Etiketten einer Serie werden gerendert.
 - **Texte:** Nutzertexte de/en über einen String Catalog in `MacLabelApp`. Sprachwahl wie `MacLabelKit.localizedBundle(preferred:)`.
+- **Gestaltung:** strikt nach Apples Human Interface Guidelines für macOS 26 (native Controls, Toolbar, Inspector, Settings-Scene, Menüleisten-Extra, SF Symbols, Systemfarben, Liquid-Glass-Materialien wo vom System vorgesehen, Tastaturkürzel, VoiceOver, Dynamic Type wo verfügbar, hell/dunkel). Vor jeder View-Arbeit Skill `swiftui-pro` laden und befolgen.
+- **Druckpausen:** Zwischen zwei getrennten Druckvorgängen hält `LabelPrinter` die `JobSpacing`-Mindestpause ein; die UI zeigt währenddessen „Drucker positioniert das Etikett …“ mit Fortschritt statt zu hängen.
 - **Debug-Haken:** `MACLABEL_FAKE_PRINTER=<Pfad>` nur unter `#if DEBUG`.
 - **Commits** enden mit dem Co-Authored-By-Trailer des schreibenden Modells.
 
@@ -140,7 +142,7 @@ docs/app-checklist.md
     - `public func availablePrinters() -> [DiscoveredPrinter]`
     - `public func state(for printer: DiscoveredPrinter?) async -> PrinterState`: öffnen, `status()`, schließen. `.busy` bei `TransportError.busy`. Kein Drucker → `.noPrinter`. Nicht unterstütztes Modell → `.unsupported(name)`.
     - `public func rememberedRoll(for printer: DiscoveredPrinter) -> LabelRoll?`, `public func remember(_ roll: LabelRoll, for printer: DiscoveredPrinter)`
-    - `public func print(_ request: PrintRequest, on printer: DiscoveredPrinter, progress: @escaping @Sendable (Int, Int) -> Void) async throws`: öffnen, `PrintService.print`, schließen (auch bei Fehler/Abbruch), danach `remember`.
+    - `public func print(_ request: PrintRequest, on printer: DiscoveredPrinter, progress: @escaping @Sendable (Int, Int) -> Void) async throws`: öffnen, `PrintService.print(…, spacing: JobSpacing(clock: formFeedClock, serial: printer.serialNumber))`, schließen (auch bei Fehler/Abbruch), danach `remember`. `LabelPrinter.init` bekommt zusätzlich `formFeedClock: any FormFeedClock = UserDefaultsFormFeedClock.standard()` (Mindestpause nach `ESC E`, `JobSpacing` in MacLabelKit, vorläufig 10 s). Alle Etiketten eines Druckvorgangs (Kopien, Serie) gehen in **einen** `PrintRequest`/Auftrag.
 
 - [ ] **Step 1: Failing tests** (mit einem Test-`TransportFactory`, der `ScriptedTransport`-artig Status liefert)
 ```swift
@@ -369,7 +371,7 @@ Die mit Kommentar beschriebenen Rümpfe werden mit den genannten Erwartungen aus
     - Standarddrucker (Picker bei mehreren Druckern)
     - „In der Menüleiste anzeigen“ (Bool, `@AppStorage("showMenuBarExtra")`, Standard true)
     - „Druckerstatus automatisch abfragen“ (`@AppStorage("statusPolling")`, Standard true)
-    - Abschnitt „Kommandozeile“ mit kopierbarem Befehl `ln -sf "<Bundle-Pfad>/Contents/MacOS/maclabel" /usr/local/bin/maclabel` und dem Hinweis, dass App und CLI getrennte gemerkte Rollen haben
+    - Abschnitt „Kommandozeile“ mit kopierbarem Befehl `ln -sf "<Bundle-Pfad>/Contents/Helpers/maclabel" /usr/local/bin/maclabel` (geändert: Ruling A21, Namenskollision auf APFS) und dem Hinweis, dass App und CLI getrennte gemerkte Rollen haben
   - `public struct AppSettings` kapselt die Schlüssel.
   - Panel-Logik als testbare Funktion `MenuBarPanel.action(for document: LabelDocument, preview: PreviewResult?) -> PanelAction` (`.print`, `.openWindow`, `.disabled(String)`).
 
@@ -404,7 +406,7 @@ Die mit Kommentar beschriebenen Rümpfe werden mit den genannten Erwartungen aus
   - Target `maclabel-cli` (tool):
     - Sources `../Sources/maclabel`, Deps `MacLabelKit` + `ArgumentParser`, `PRODUCT_NAME: maclabel`, eigene leere Entitlements ohne Sandbox
     - Ressourcen-Bundles (`MacLabelKit_*.bundle`) per Copy-Files-Phase nach `Contents/Resources`
-    - Wird als Abhängigkeit von `MacLabel` mit Copy-Files-Phase nach `Contents/MacOS` eingebettet, signiert mit `CodeSignOnCopy`
+    - Wird als Abhängigkeit von `MacLabel` mit Copy-Files-Phase nach `Contents/Helpers` eingebettet (geändert: Ruling A21, Namenskollision auf APFS), signiert mit `CodeSignOnCopy`
 - **Info.plist** (beide Texte de/en über InfoPlist-Strings):
   - `NSServices`: `NSMenuItem.default = "Mit MacLabel drucken"`, `NSMessage = printLabel`, `NSSendTypes = [NSStringPboardType, public.utf8-plain-text]`, `NSPortName = MacLabel`
   - `NSContactsUsageDescription`
@@ -425,7 +427,7 @@ Die mit Kommentar beschriebenen Rümpfe werden mit den genannten Erwartungen aus
 
 - [ ] **Step 1: Verifikations-Skript zuerst:** `scripts/verify-app.sh` prüft am gebauten Bundle und schlägt fehl, wenn etwas fehlt:
   1. `codesign -d --entitlements -` zeigt genau die vier erlaubten Entitlements und **kein** `network`.
-  2. `Contents/MacOS/maclabel` existiert. Über einen Symlink in einem Temp-Verzeichnis liefert `maclabel rolls search 32x57` Exit 0 und „11354“.
+  2. `Contents/Helpers/maclabel` existiert (geändert: Ruling A21, Namenskollision auf APFS). Über einen Symlink in einem Temp-Verzeichnis liefert `maclabel rolls search 32x57` Exit 0 und „11354“.
   3. `plutil -extract NSServices` ist vorhanden.
   4. `grep -rE "URLSession|import Network" Sources App` findet nichts.
 - [ ] **Step 2: `scripts/verify-app.sh` vor dem Bauen → FAIL** (Bundle fehlt).

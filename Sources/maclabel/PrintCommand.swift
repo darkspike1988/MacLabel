@@ -114,10 +114,10 @@ struct PrintCommand: AsyncParsableCommand {
             throw fail(localizedString("CSV contains no data rows"), code: Exit.usage)
         }
 
-        // Selecting a printer only reads the IORegistry; no device is opened here.
+        // Selecting a printer only reads the IORegistry (or the debug fake); no device is opened here.
         let selected: DiscoveredPrinter? = dryRun != nil
-            ? try? PrinterSelection.select(serial: printer)
-            : try PrinterSelection.select(serial: printer)
+            ? try? selectPrinter(serial: printer)
+            : try selectPrinter(serial: printer)
         let preferences = RollPreferences.standard()
         let resolution = try RollResolver.resolve(
             query: roll, catalog: .bundled, preferences: preferences,
@@ -141,7 +141,7 @@ struct PrintCommand: AsyncParsableCommand {
         request.model = found.model
         // Render before opening the device so content errors never touch the printer.
         _ = try PrintService.prepare(request)
-        let connection = try USBPrinterConnection(printer: found)
+        let connection = try printerFactory.open(found)
         do {
             let spacing = JobSpacing(clock: UserDefaultsFormFeedClock.standard(), serial: found.serialNumber)
             try await PrintService.print(request, using: connection, spacing: spacing) { done, total in

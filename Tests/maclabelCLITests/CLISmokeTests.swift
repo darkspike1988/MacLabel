@@ -23,12 +23,19 @@ import Testing
             .appendingPathComponent(".build/debug/maclabel")
     }
 
-    static func run(_ args: [String], suite: String = "maclabel.test.\(UUID().uuidString)") throws -> Result {
+    /// Runs the CLI against the debug-only fake printer (`MACLABEL_FAKE_PRINTER`, Ruling A25): it
+    /// discovers one "LabelWriter 450" (serial FAKE) and writes print data to `fakePrinter`, never
+    /// to a USB device; tests do not depend on connected hardware.
+    static func run(
+        _ args: [String], suite: String = "maclabel.test.\(UUID().uuidString)",
+        fakePrinter: URL = tempURL("fake-printer.bin")
+    ) throws -> Result {
         let process = Process()
         process.executableURL = binaryURL
         process.arguments = args
         var env = ProcessInfo.processInfo.environment
         env["MACLABEL_DEFAULTS_SUITE"] = suite
+        env["MACLABEL_FAKE_PRINTER"] = fakePrinter.path
         process.environment = env
         let outPipe = Pipe(), errPipe = Pipe()
         process.standardOutput = outPipe
@@ -46,6 +53,47 @@ import Testing
 
     static func tempURL(_ name: String) -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("maclabel-\(UUID().uuidString)-\(name)")
+    }
+
+    /// The CLI inside an app bundle (`Contents/Helpers` in MacLabel.app, `Contents/MacOS` also supported),
+    /// started by bare name through a symlink on PATH, must find its resources.
+    @Test(arguments: ["Helpers", "MacOS"]) func resourcesFoundViaSymlinkOnPath(_ folder: String) throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appendingPathComponent("maclabel-app-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: root) }
+        let macOS = root.appendingPathComponent("X.app/Contents/\(folder)")
+        let resources = root.appendingPathComponent("X.app/Contents/Resources")
+        let bin = root.appendingPathComponent("bin")
+        for dir in [macOS, resources, bin] { try fm.createDirectory(at: dir, withIntermediateDirectories: true) }
+        try fm.copyItem(at: Self.binaryURL, to: macOS.appendingPathComponent("maclabel"))
+        let built = Self.binaryURL.deletingLastPathComponent()
+        let bundles = try fm.contentsOfDirectory(atPath: built.path).filter {
+            $0.hasPrefix("MacLabelKit_") && $0.hasSuffix(".bundle") && !$0.contains("Tests")
+        }
+        #expect(!bundles.isEmpty)
+        for name in bundles { try fm.copyItem(at: built.appendingPathComponent(name), to: resources.appendingPathComponent(name)) }
+        // Mark the copy so the test proves the bundle beside the executable is used, not the build directory's.
+        let copiedJSON = try #require(fm.enumerator(at: resources, includingPropertiesForKeys: nil)?
+            .compactMap { $0 as? URL }.first { $0.lastPathComponent == "media.json" })
+        let json = try String(contentsOf: copiedJSON, encoding: .utf8)
+        try json.replacingOccurrences(of: "\"Vielzweck\"", with: "\"Vielzweck-COPY\"").write(to: copiedJSON, atomically: true, encoding: .utf8)
+        try fm.createSymbolicLink(at: bin.appendingPathComponent("maclabel"), withDestinationURL: macOS.appendingPathComponent("maclabel"))
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["maclabel", "rolls", "search", "32x57"]
+        process.environment = ["PATH": bin.path, "MACLABEL_DEFAULTS_SUITE": "maclabel.test.\(UUID().uuidString)"]
+        process.currentDirectoryURL = URL(fileURLWithPath: "/")
+        let out = Pipe(), err = Pipe()
+        process.standardOutput = out
+        process.standardError = err
+        try process.run()
+        let outText = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        let errText = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        process.waitUntilExit()
+        #expect(process.terminationStatus == 0, "\(errText)")
+        #expect(outText.contains("11354"))
+        #expect(outText.contains("Vielzweck-COPY"), "resources came from elsewhere:\n\(outText)")
     }
 
     @Test func rollsSearchFindsRoll() throws {
@@ -74,13 +122,21 @@ import Testing
         #expect(Array(data.prefix(4)) == [0x89, 0x50, 0x4E, 0x47])
     }
 
+    /// Non-dry `print` calls may only run when the binary honours the fake printer;
+    /// otherwise a regression could send a job to a real, connected LabelWriter.
+    static func requireFakePrinter() throws {
+        try #require(try run(["printers"]).out.contains("FAKE"), "binary ignores MACLABEL_FAKE_PRINTER; refusing to print")
+    }
+
     @Test func noRollIsUsageError() throws {
+        try Self.requireFakePrinter()
         let r = try Self.run(["print", "Test"])
         #expect(r.status == 64)
         #expect(r.err.contains("11354"))
     }
 
     @Test func dryRunDoesNotRememberRoll() throws {
+        try Self.requireFakePrinter()
         let suite = "maclabel.test.\(UUID().uuidString)"
         let url = Self.tempURL("x.bin")
         defer { try? FileManager.default.removeItem(at: url) }
@@ -89,6 +145,7 @@ import Testing
     }
 
     @Test func ambiguousRollListsCandidates() throws {
+        try Self.requireFakePrinter()
         let r = try Self.run(["print", "Test", "--roll", "label"])
         #expect(r.status == 64)
         let catalog = MediaCatalog.bundled
@@ -122,11 +179,36 @@ import Testing
             try RollResolver.resolve(query: nil, catalog: .bundled, preferences: prefs, serial: "OTHER")
         }
 
-        // End to end through the binary (dry run without printer uses the "default" key).
+        // End to end through the binary: the (fake) printer's remembered roll is used.
+        prefs.setLastRollID("11354", forPrinterSerial: "FAKE")
         let url = Self.tempURL("x.bin")
         defer { try? FileManager.default.removeItem(at: url) }
         let r = try Self.run(["print", "T", "--dry-run", url.path], suite: suite)
-        if USBPrinterDiscovery.printers().isEmpty { #expect(r.status == 0, "\(r.err)") }
+        #expect(r.status == 0, "\(r.err)")
+    }
+
+    /// `printers` and `status` see the fake printer, so these paths run without hardware.
+    @Test func fakePrinterIsDiscovered() throws {
+        let printers = try Self.run(["printers"])
+        #expect(printers.status == 0, "\(printers.err)")
+        #expect(printers.out.contains("LabelWriter 450") && printers.out.contains("FAKE"))
+        let status = try Self.run(["status"])
+        #expect(status.status == 0, "\(status.err)")
+        #expect(status.out.contains("LabelWriter 450"))
+    }
+
+    /// A real (non-dry) print goes to the fake printer's file. Only runs when the binary is a debug
+    /// build that honours `MACLABEL_FAKE_PRINTER`; otherwise it stops before printing.
+    @Test func printGoesToFakePrinterFile() throws {
+        let fake = Self.tempURL("fake.bin")
+        defer { try? FileManager.default.removeItem(at: fake) }
+        let probe = try Self.run(["printers"], fakePrinter: fake)
+        try #require(probe.out.contains("FAKE"), "binary ignores MACLABEL_FAKE_PRINTER; refusing to print")
+        let r = try Self.run(["print", "Fake", "--roll", "11354"], fakePrinter: fake)
+        #expect(r.status == 0, "\(r.err)")
+        let bytes = [UInt8](try Data(contentsOf: fake))
+        #expect(bytes.count > 156)
+        #expect(bytes.suffix(2) == [0x1B, 0x45])
     }
 
     @Test func overflowWithoutForceExits65() throws {

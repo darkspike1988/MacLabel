@@ -9,6 +9,13 @@ public struct DiscoveredPrinter: Sendable, Hashable, Identifiable {
     public let model: PrinterModel
     public let serialNumber: String?
     public let locationID: UInt32?
+
+    public init(id: UInt64, model: PrinterModel, serialNumber: String?, locationID: UInt32?) {
+        self.id = id
+        self.model = model
+        self.serialNumber = serialNumber
+        self.locationID = locationID
+    }
 }
 
 public enum USBPrinterDiscovery {

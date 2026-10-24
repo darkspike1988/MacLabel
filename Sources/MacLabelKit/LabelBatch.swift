@@ -28,7 +28,7 @@ public struct CounterSpec: Sendable, Equatable {
         self.minimumDigits = minimumDigits
     }
 
-    func formatted(index: Int) -> String {
+    public func formatted(index: Int) -> String {
         let value = start + step * index
         let digits = String(abs(value))
         let padded = String(repeating: "0", count: max(0, minimumDigits - digits.count)) + digits
@@ -91,7 +91,13 @@ public enum LabelBatch {
         }
     }
 
-    private static func replace(_ s: String, counter: String?, row: [String: String]?) throws -> String {
+    /// Substitutes placeholders in one string. `row` keys must be lowercased; `counter` is the formatted value.
+    /// With `strict == false` unknown placeholders stay literal (`{x}`) instead of throwing.
+    public static func substitute(_ text: String, row: [String: String]?, counter: String?, strict: Bool) throws -> String {
+        try replace(text, counter: counter, row: row, strict: strict)
+    }
+
+    private static func replace(_ s: String, counter: String?, row: [String: String]?, strict: Bool = true) throws -> String {
         var out = ""
         let chars = Array(s)
         var i = 0
@@ -108,8 +114,10 @@ public enum LabelBatch {
                         out += counter
                     } else if let value = row?[key] {
                         out += value
-                    } else {
+                    } else if strict {
                         throw BatchError.unknownPlaceholder(name)
+                    } else {
+                        out += String(chars[i...close])
                     }
                     i = close + 1
                 } else {

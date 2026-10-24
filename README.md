@@ -2,7 +2,7 @@
 
 Eine schnelle, native macOS-App für DYMO-LabelWriter-Etikettendrucker – als moderne Alternative zu DYMO Connect.
 
-> **Status:** frühe Entwicklung. Kern und CLI drucken bereits erfolgreich auf einem LabelWriter 450; die App folgt.
+> **Status:** frühe Entwicklung. Kern und CLI drucken bereits erfolgreich auf einem LabelWriter 450; die App ist gebaut und wird gerade am Gerät geprüft.
 
 **Ziel:** In unter 10 Sekunden das passende Etikett drucken – ohne Einstellungen zu suchen.
 
@@ -13,7 +13,7 @@ Eine schnelle, native macOS-App für DYMO-LabelWriter-Etikettendrucker – als m
 
 ## Status
 
-Kern (`MacLabelKit`) und CLI sind fertig. Der erste Testdruck auf einem LabelWriter 450 (Rolle 11354) war erfolgreich; weitere Prüfschritte stehen in [`docs/first-print-checklist.md`](docs/first-print-checklist.md). Die App folgt.
+Kern (`MacLabelKit`) und CLI sind fertig. Der erste Testdruck auf einem LabelWriter 450 (Rolle 11354) war erfolgreich; weitere Prüfschritte stehen in [`docs/first-print-checklist.md`](docs/first-print-checklist.md). Die Prüfschritte der App stehen in [`docs/app-checklist.md`](docs/app-checklist.md).
 
 ## Datenschutz
 
@@ -31,6 +31,22 @@ swift build -c release
 ```
 
 Das Programm liegt danach unter `.build/release/maclabel`. Es braucht seine Ressourcen-Ordner (`*.bundle`, z. B. die Rollen-Datenbank und die Übersetzungen) im selben Verzeichnis: Beim Kopieren an einen anderen Ort `.build/release/MacLabelKit_*.bundle` mitkopieren.
+
+## App bauen und starten
+
+Voraussetzungen: macOS 26 oder neuer, Xcode 27.1 und [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
+
+```
+scripts/build-app.sh            # erzeugt App/MacLabel.xcodeproj und baut build/MacLabel.app (Release, ad-hoc signiert)
+scripts/verify-app.sh           # prüft Entitlements, Signatur, eingebettetes CLI und Dienst-Eintrag
+open build/MacLabel.app
+```
+
+- `scripts/build-app.sh --install` kopiert die App zusätzlich nach `~/Applications` und aktualisiert das Dienste-Menü (`pbs -update`). Das ist nötig für den Dienst „Mit MacLabel drucken“ und für die Kurzbefehle.
+- Die App läuft in der Sandbox und hat nur USB-Zugriff und Lesezugriff auf selbst gewählte Dateien, kein Netzwerk.
+- Das Kommandozeilenwerkzeug steckt in der App (`MacLabel.app/Contents/Helpers/maclabel`). Den Befehl zum Verlinken zeigt *MacLabel › Kommandozeilenwerkzeug installieren…* bzw. die Einstellungen.
+- App und Kommandozeilenwerkzeug teilen sich die Druckpause nicht (die Sandbox trennt ihren Speicher): Nach einem Druck aus der App etwa 10 s warten, bevor du mit dem Kommandozeilenwerkzeug druckst (und umgekehrt).
+- Die Xcode-Projektdatei wird erzeugt und nicht eingecheckt; zum Bearbeiten `xcodegen generate --spec App/project.yml` ausführen und `App/MacLabel.xcodeproj` öffnen.
 
 ## CLI-Beispiele
 

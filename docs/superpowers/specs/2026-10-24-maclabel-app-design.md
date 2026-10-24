@@ -27,7 +27,7 @@ Eine einheitliche, native macOS-App, mit der man **in unter 10 Sekunden ohne Ein
 9. **Dienst „Mit MacLabel drucken“** (NSServices, Text): öffnet das Hauptfenster mit dem markierten Text im Text-Layout.
 10. **App Intents (Kurzbefehle/Siri/Spotlight):** „Etikett drucken“ (Text, Kopien; Rolle optional, sonst die gemerkte; ohne gemerkte Rolle Fehler mit Hinweis) und „Druckerstatus abfragen“.
 11. **Einheitliche App:**
-   - Das CLI `maclabel` liegt im Bundle unter `Contents/MacOS/maclabel`, mit seinen Ressourcen-Bundles daneben in `Contents/Resources`.
+   - Das CLI `maclabel` liegt im Bundle unter `Contents/Helpers/maclabel` (geändert: Ruling A21, Namenskollision auf APFS – `MacLabel` und `maclabel` in `Contents/MacOS` sind auf einem Volume ohne Groß-/Kleinschreibung dieselbe Datei), mit seinen Ressourcen-Bundles in `Contents/Resources`.
    - Der Menüpunkt „Kommandozeilenwerkzeug installieren…“ zeigt den Symlink-Befehl zum Kopieren an. MacLabel selbst schreibt nichts außerhalb des Containers.
 12. **Einstellungen:** Standarddrucker (bei mehreren), „In der Menüleiste anzeigen“, Statusabfrage an/aus, CLI-Hinweis.
 13. **Fehler in Klartext** (de/en) aus `PrintError`, `RenderError`, `BatchError`, `CSVError`, `TransportError`. Abbruch während des Drucks mit Fortschritt („Etikett 3 von 10“) und Abbrechen-Knopf.
@@ -71,7 +71,7 @@ Eine einheitliche, native macOS-App, mit der man **in unter 10 Sekunden ohne Ein
 - **`App/project.yml` (XcodeGen)** erzeugt `App/MacLabel.xcodeproj`. Die erzeugte Datei wird **nicht** eingecheckt; `.gitignore` deckt sie ab.
   - Target `MacLabel` (macOS-App): nur `@main`-App-Struct, Scenes, App Intents, Services-Provider, Info.plist und Entitlements. Hängt vom lokalen Paket ab (Produkt `MacLabelApp`).
   - Target `maclabel-cli` (Command Line Tool): kompiliert `Sources/maclabel` mit dem Paket-Produkt `MacLabelKit` und ArgumentParser.
-  - Eine Copy-Files-Phase legt das Binary nach `Contents/MacOS/maclabel` und die Ressourcen-Bundles nach `Contents/Resources`.
+  - Eine Copy-Files-Phase legt das Binary nach `Contents/Helpers/maclabel` (geändert: Ruling A21, Namenskollision auf APFS – `MacLabel` und `maclabel` in `Contents/MacOS` sind auf einem Volume ohne Groß-/Kleinschreibung dieselbe Datei) und die Ressourcen-Bundles nach `Contents/Resources`.
   - Ein Build-Skript `scripts/build-app.sh` erzeugt das Projekt, baut Release mit `xcodebuild` und signiert ad-hoc. Ergebnis: `build/MacLabel.app`.
 - App Intents liegen im App-Target, weil Xcode dort die Metadaten erzeugt. Ihre Logik ruft `MacLabelApp`-Dienste auf.
 
@@ -122,7 +122,7 @@ Eine einheitliche, native macOS-App, mit der man **in unter 10 Sekunden ohne Ein
 6. **CLI im Bundle:**
    - Das Xcode-Target `maclabel-cli` kompiliert `Sources/maclabel` erneut. Die Ressourcen (`media.json`, Strings) lädt das CLI nicht über `Bundle.module`, sondern über einen eigenen Lookup in `LabelMedia`/`MacLabelKit`.
    - Reihenfolge des Lookups: 1. `Bundle.module`, falls vorhanden. 2. `<echter Pfad des Executables, Symlinks aufgelöst>/../Resources/<Bundle-Name>.bundle`. 3. Dasselbe neben dem Executable.
-   - Muss im Plan per Test verifiziert werden: `maclabel rolls search 32x57` über einen Symlink auf `MacLabel.app/Contents/MacOS/maclabel`.
+   - Muss im Plan per Test verifiziert werden: `maclabel rolls search 32x57` über einen Symlink auf `MacLabel.app/Contents/Helpers/maclabel` (geändert: Ruling A21).
    - Das CLI wird separat und ohne Sandbox-Entitlements signiert (innen nach außen).
 7. **CSV und Bilder** werden nicht über Neustarts gemerkt (keine Security-Scoped Bookmarks).
 8. **Lokalisierung:** `MacLabelApp` bekommt einen eigenen String Catalog und nutzt denselben Sprachwahl-Mechanismus wie `MacLabelKit` (`localizedBundle(preferred:)`).

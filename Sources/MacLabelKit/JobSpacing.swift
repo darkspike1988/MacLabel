@@ -49,7 +49,7 @@ public struct JobSpacing: Sendable {
     }
 
     /// Time still to wait before a new job may start, or `.zero`.
-    func remainingPause(now: Date = Date()) -> Duration {
+    public func remainingPause(now: Date = Date()) -> Duration {
         guard let last = clock.lastFormFeed(serial: serial) else { return .zero }
         let elapsed = now.timeIntervalSince(last)
         let pause = Double(minimumPause.components.seconds) + Double(minimumPause.components.attoseconds) / 1e18

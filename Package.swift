@@ -7,6 +7,9 @@ let package = Package(
     platforms: [.macOS(.v26)],
     products: [
         .library(name: "MacLabelKit", targets: ["MacLabelKit"]),
+        .library(name: "MacLabelApp", targets: ["MacLabelApp"]),
+        // For the Xcode target that builds the CLI into MacLabel.app (`simulate` command).
+        .library(name: "LabelSimulator", targets: ["LabelSimulator"]),
         .executable(name: "maclabel", targets: ["maclabel"]),
     ],
     dependencies: [
@@ -27,6 +30,11 @@ let package = Package(
             dependencies: ["LabelProtocol", "LabelMedia", "LabelRender", "LabelTransport"],
             resources: [.process("Localizable.xcstrings")]
         ),
+        .target(
+            name: "MacLabelApp",
+            dependencies: ["MacLabelKit"],
+            resources: [.process("Localizable.xcstrings")]
+        ),
         .executableTarget(
             name: "maclabel",
             dependencies: [
@@ -45,6 +53,7 @@ let package = Package(
             resources: [.copy("Fixtures")]
         ),
         .testTarget(name: "MacLabelKitTests", dependencies: ["MacLabelKit"]),
+        .testTarget(name: "MacLabelAppTests", dependencies: ["MacLabelApp"]),
         .testTarget(name: "maclabelCLITests", dependencies: ["maclabel", "MacLabelKit", "LabelMedia", "LabelTransport"]),
     ],
     swiftLanguageModes: [.v6]
