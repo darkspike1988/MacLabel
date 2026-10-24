@@ -116,8 +116,8 @@ struct PrintCommand: AsyncParsableCommand {
 
         // Selecting a printer only reads the IORegistry; no device is opened here.
         let selected: DiscoveredPrinter? = dryRun != nil
-            ? try? PrinterSelection.select(serial: printer)
-            : try PrinterSelection.select(serial: printer)
+            ? try? selectPrinter(serial: printer)
+            : try selectPrinter(serial: printer)
         let preferences = RollPreferences.standard()
         let resolution = try RollResolver.resolve(
             query: roll, catalog: .bundled, preferences: preferences,

@@ -65,23 +65,12 @@ func exitFailure(_ error: any Error) -> ExitCode {
     return fail(message(for: error), code: exitCode(for: error))
 }
 
-enum PrinterSelection {
-    /// The printer named by `serial`, or else the first LW-Classic printer.
-    /// Throws `ExitCode` (69) with a message when none is usable.
-    static func select(serial: String?, printers: [DiscoveredPrinter] = USBPrinterDiscovery.printers()) throws -> DiscoveredPrinter {
-        if let serial {
-            guard let match = printers.first(where: { $0.serialNumber == serial }) else {
-                throw fail(localizedString("No printer with serial number \(serial) found."), code: Exit.noPrinter)
-            }
-            guard match.model.family == .lwClassic else { throw unsupported(match) }
-            return match
-        }
-        if let classic = printers.first(where: { $0.model.family == .lwClassic }) { return classic }
-        if let other = printers.first { throw unsupported(other) }
-        throw fail(PrintError.transport(.notFound).localizedDescription, code: Exit.noPrinter)
-    }
-
-    private static func unsupported(_ printer: DiscoveredPrinter) -> ExitCode {
-        fail(PrintError.unsupportedPrinter(printer.model.name).localizedDescription, code: Exit.noPrinter)
+/// The printer named by `serial`, or else the first LW-Classic printer.
+/// Throws `ExitCode` (69) with a message when none is usable.
+func selectPrinter(serial: String?, printers: [DiscoveredPrinter] = USBPrinterDiscovery.printers()) throws -> DiscoveredPrinter {
+    do {
+        return try PrinterSelection.select(serial: serial, from: printers)
+    } catch let error as PrinterSelectionError {
+        throw fail(error.localizedDescription, code: Exit.noPrinter)
     }
 }

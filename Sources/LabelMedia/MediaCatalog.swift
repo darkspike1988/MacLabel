@@ -10,8 +10,12 @@ public struct MediaCatalog: Sendable {
 
     /// Location of the bundled `media.json` (resource bundle of `LabelMedia`).
     public static var bundledResourceURL: URL {
-        Bundle.module.url(forResource: "media", withExtension: "json")!
+        resourceBundle.url(forResource: "media", withExtension: "json")!
     }
+
+    private static let resourceBundle: Bundle = {
+        ResourceLocator.bundle(named: "MacLabelKit_LabelMedia", fallback: Bundle.module) ?? Bundle.module
+    }()
 
     public static let bundled: MediaCatalog = {
         struct File: Decodable { let version: Int; let rolls: [LabelRoll] }
