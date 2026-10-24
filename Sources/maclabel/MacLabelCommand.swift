@@ -9,7 +9,7 @@ struct MacLabel: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "maclabel",
         abstract: "Print labels on a DYMO LabelWriter.",
-        subcommands: [PrintCommand.self, StatusCommand.self, RollsCommand.self, PrintersCommand.self]
+        subcommands: [PrintCommand.self, StatusCommand.self, RollsCommand.self, PrintersCommand.self, SimulateCommand.self]
     )
 }
 

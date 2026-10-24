@@ -12,7 +12,7 @@ import Testing
     }
     @Test func headerGraphicsDarkTwinLeft() {
         let h = LWClassicEncoder.jobHeader(.init(labels: [], labelLengthLines: 1, quality: .graphics, density: .dark, twinRoll: .left))
-        #expect(Array(h.suffix(7)) == [0x1B,0x69, 0x1B,0x67, 0x1B,0x71,0x31])
+        #expect(Array(h.suffix(7)) == [0x1B,0x68, 0x1B,0x67, 0x1B,0x71,0x31])
     }
     @Test func labelLengthBigEndian() {
         #expect(Array(LWClassicEncoder.label(MonochromeBitmap(width: 16, height: 0), lengthLines: 0x0123).prefix(4)) == [0x1B,0x4C,0x01,0x23])
@@ -63,4 +63,16 @@ import Testing
         #expect(LWClassicEncoder.endOfJob == [0x1B,0x45])
         #expect(LWClassicEncoder.reset == [0x1B,0x40])
     }
+}
+
+@Test func graphicsLabelStartsWithTextLineThenSwitches() {
+    var b = MonochromeBitmap(width: 16, height: 4)
+    b[0, 1] = true; b[15, 3] = true
+    let bytes = LWClassicEncoder.label(b, lengthLines: 4, quality: .graphics)
+    #expect(Array(bytes.prefix(13)) == [0x1B,0x44,2, 0x16,0x80,0x00, 0x1B,0x69, 0x1B,0x4C,0x00,0x04, 0x1B])
+    #expect(Array(bytes.suffix(3)) == [0x16, 0x00, 0x01])
+}
+@Test func graphicsJobEndsInTextModeFormFeed() {
+    let job = LWClassicJob(labels: [MonochromeBitmap(width: 16, height: 2)], labelLengthLines: 2, quality: .graphics, density: .normal)
+    #expect(Array(LWClassicEncoder.encode(job).suffix(4)) == [0x1B,0x68, 0x1B,0x45])
 }

@@ -159,7 +159,7 @@ public enum PrintService {
             headerSent = true
             for (index, bitmap) in job.labels.enumerated() {
                 try Task.checkCancellation()
-                try await transport.write(LWClassicEncoder.label(bitmap, lengthLines: job.labelLengthLines))
+                try await transport.write(LWClassicEncoder.label(bitmap, lengthLines: job.labelLengthLines, quality: job.quality))
                 let status = try await transport.status()
                 progress?(index + 1, total)
                 guard status.canPrint else {
@@ -167,7 +167,7 @@ public enum PrintService {
                 }
                 if index < total - 1 { try await transport.write(LWClassicEncoder.betweenLabels) }
             }
-            try await transport.write(LWClassicEncoder.endOfJob)
+            try await transport.write(LWClassicEncoder.endOfJob(quality: job.quality))
         } catch {
             if headerSent {
                 // Discard partial data; resync + ESC @ never moves paper. Unstructured task:
