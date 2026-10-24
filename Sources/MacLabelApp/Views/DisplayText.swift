@@ -118,10 +118,24 @@ extension LabelRoll {
     /// "57 × 32 mm", or "57 mm continuous".
     var sizeText: String {
         let size = readingSizeMM
-        let width = Int(size.width.rounded())
-        guard let height = size.height else { return L10n.string("\(width) mm continuous") }
-        return "\(width) × \(Int(height.rounded())) mm"
+        let width = size.width.rounded()
+        guard let height = size.height else { return L10n.string("\(Self.millimeters(width)) continuous") }
+        return L10n.string("Size \(width.formatted(.number.precision(.fractionLength(0)))) × \(Self.millimeters(height.rounded()))")
     }
+
+    /// "32 mm", formatted for the user's locale.
+    private static func millimeters(_ value: Double) -> String {
+        Measurement(value: value, unit: UnitLength.millimeters)
+            .formatted(.measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(0))))
+    }
+
+    /// "11354, Name, 57 × 32 mm" for VoiceOver.
+    func spokenName(articleNumber: String) -> String {
+        L10n.string("Article \(articleNumber), \(displayName), \(sizeText)")
+    }
+
+    /// "57 × 32 mm · Name" under the preview.
+    var sizeAndName: String { L10n.string("\(sizeText) · \(displayName)") }
 
     var materialText: String? {
         material == "durable" ? L10n.string("Durable") : nil

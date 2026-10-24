@@ -24,8 +24,6 @@ struct PrintBar: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
         .alert(L10n.string("Print anyway?"), isPresented: $confirmOverflow) {
             Button(L10n.string("Print")) { start(allowOverflow: true) }
             Button(L10n.string("Cancel"), role: .cancel) {}

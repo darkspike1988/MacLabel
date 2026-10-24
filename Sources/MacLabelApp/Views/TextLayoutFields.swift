@@ -4,7 +4,6 @@ import SwiftUI
 /// Text layout: multi-line text (auto-fitted by the renderer), bold and alignment.
 struct TextLayoutFields: View {
     @Environment(AppModel.self) private var model
-    @FocusState private var textFocused: Bool
 
     var body: some View {
         @Bindable var model = model
@@ -16,7 +15,6 @@ struct TextLayoutFields: View {
             .labelsHidden()
             .lineLimit(3...10)
             .multilineTextAlignment(.leading)
-            .focused($textFocused)
         }
 
         Section {
@@ -33,6 +31,5 @@ struct TextLayoutFields: View {
         } footer: {
             Text(L10n.string("The text size adapts to the label automatically."))
         }
-        .onAppear { textFocused = true }
     }
 }

@@ -5,33 +5,29 @@ import SwiftUI
 struct RollRow: View {
     let roll: LabelRoll
     let isCurrent: Bool
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(roll.id).bold()
-                    Text(roll.displayName)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if let material = roll.materialText {
-                    Text(material)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-                if isCurrent {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
-                        .accessibilityHidden(true)
-                }
+        HStack {
+            VStack(alignment: .leading) {
+                Text(roll.id).bold()
+                Text(roll.displayName)
+                    .foregroundStyle(.secondary)
             }
-            .contentShape(.rect)
+            Spacer()
+            if let material = roll.materialText {
+                Text(material)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            if isCurrent {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+            }
         }
-        .buttonStyle(.plain)
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(verbatim: "\(roll.id), \(roll.displayName), \(roll.sizeText)"))
+        .accessibilityLabel(Text(roll.spokenName(articleNumber: roll.id)))
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 }

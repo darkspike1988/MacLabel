@@ -76,12 +76,6 @@ private func model(
     return AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: 1))
 }
 
-@MainActor
-private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool) async {
-    let deadline = ContinuousClock.now + timeout
-    while !condition(), ContinuousClock.now < deadline { try? await Task.sleep(for: .milliseconds(5)) }
-}
-
 // MARK: - Tests
 
 @Suite struct AppModelTests {
@@ -160,7 +154,7 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         m.document.text = "x"
         m.document.copies = 3
         let job = Task { await m.print(allowOverflow: false) }
-        await waitUntil { m.printPhase == .printing(done: 1, total: 3) }
+        await waitFor { m.printPhase == .printing(done: 1, total: 3) }
         #expect(m.printPhase == .printing(done: 1, total: 3))
         #expect(!m.monitor.isPolling)
         m.cancelPrint()
@@ -181,7 +175,7 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         let m = model(printers: [appLW450Printer], remembered: "11354")
         await m.refreshPrinters()
         m.document.text = "Hallo"
-        await waitUntil { m.previewResult?.pages.count == 1 }
+        await waitFor { m.previewResult?.pages.count == 1 }
         #expect(m.previewResult?.pages.count == 1 && m.previewResult?.error == nil)
     }
 }

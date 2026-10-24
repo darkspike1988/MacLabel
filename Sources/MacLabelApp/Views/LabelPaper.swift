@@ -11,38 +11,50 @@ struct LabelPaper: View {
     let overflow: Bool
     let spokenText: String
 
+    @Environment(\.displayScale) private var displayScale
+
     var body: some View {
-        let shape = LabelShape(cornerFraction: cornerFraction)
         let layout = feed.isVertical ? AnyLayout(HStackLayout(spacing: 12)) : AnyLayout(VStackLayout(spacing: 12))
         layout {
-            Image(decorative: image, scale: 1)
-                .resizable()
-                .interpolation(.medium)
-                .aspectRatio(contentMode: .fit)
-                .frame(maxWidth: Self.maxSize.width, maxHeight: Self.maxSize.height)
-                // Shrink-wrap the bounded frame to the label so outline and shadow hug the paper.
-                .aspectRatio(CGSize(width: image.width, height: image.height), contentMode: .fit)
-                .background(.white)
-                .clipShape(shape)
-                .overlay {
-                    if overflow {
-                        shape.stroke(.red, lineWidth: 3)
-                    } else {
-                        shape.stroke(.black.opacity(0.08), lineWidth: 1)
-                    }
-                }
-                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
-                .accessibilityElement()
-                .accessibilityLabel(spokenText)
-                .accessibilityValue(overflow ? L10n.string("Doesn't fit on the label") : "")
-                .accessibilityAddTraits(.isImage)
+            ViewThatFits {
+                paper
+                ScrollView([.horizontal, .vertical]) { paper.padding(12) }
+            }
 
             Image(systemName: feed.systemImage)
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .help(L10n.string("Feed direction: this edge leaves the printer first."))
                 .accessibilityLabel(L10n.string("Feed direction"))
+                .accessibilityValue(feed.title)
         }
+    }
+
+    /// The raster at a whole number of device pixels per dot, see `PreviewSizing`.
+    private var paper: some View {
+        let shape = LabelShape(cornerFraction: cornerFraction)
+        let size = PreviewSizing.size(
+            pixels: CGSize(width: image.width, height: image.height), displayScale: displayScale, limit: Self.maxSize
+        )
+        return Image(decorative: image, scale: 1)
+            .resizable()
+            .interpolation(.none)
+            .antialiased(false)
+            .frame(width: size.width, height: size.height)
+            .background(.white)
+            .clipShape(shape)
+            .overlay {
+                if overflow {
+                    shape.stroke(.red, lineWidth: 3)
+                } else {
+                    shape.stroke(.black.opacity(0.08), lineWidth: 1)
+                }
+            }
+            .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+            .accessibilityElement()
+            .accessibilityLabel(spokenText)
+            .accessibilityValue(overflow ? L10n.string("Doesn't fit on the label") : "")
+            .accessibilityAddTraits(.isImage)
     }
 
     /// Large, but not so large that a small label turns into a poster.

@@ -24,6 +24,6 @@ struct QuickRollButton: View {
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle(radius: 10))
         .controlSize(.large)
-        .accessibilityLabel(Text(verbatim: "\(articleNumber), \(roll.displayName), \(roll.sizeText)"))
+        .accessibilityLabel(Text(roll.spokenName(articleNumber: articleNumber)))
     }
 }

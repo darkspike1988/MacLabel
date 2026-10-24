@@ -9,7 +9,7 @@ struct ImageFields: View {
         Section {
             LabeledContent(L10n.string("Picture")) {
                 if let image = model.document.image {
-                    Text(verbatim: "\(image.width) × \(image.height) px")
+                    Text(L10n.string("\(image.width) × \(image.height) px"))
                 } else {
                     Text(L10n.string("None"))
                         .foregroundStyle(.secondary)

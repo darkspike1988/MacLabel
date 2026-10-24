@@ -10,8 +10,11 @@ struct CounterSection: View {
             Toggle(L10n.string("Counter"), isOn: $model.document.counterEnabled)
             if model.document.counterEnabled {
                 LabeledContent(L10n.string("Start")) {
-                    Text(model.document.counterStart, format: .number)
+                    TextField(L10n.string("Start"), value: $model.document.counterStart, format: .number)
+                        .labelsHidden()
+                        .multilineTextAlignment(.trailing)
                         .monospacedDigit()
+                        .frame(width: 72)
                     Stepper(L10n.string("Start"), value: $model.document.counterStart, in: 0...999_999)
                         .labelsHidden()
                 }

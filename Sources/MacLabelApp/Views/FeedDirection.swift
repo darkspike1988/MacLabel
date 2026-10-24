@@ -27,3 +27,15 @@ enum FeedDirection: Equatable {
     /// Up/down feed is drawn beside the label, left/right feed below it.
     var isVertical: Bool { self == .up || self == .down }
 }
+
+extension FeedDirection {
+    /// The edge the label leaves the printer by, for VoiceOver.
+    var title: String {
+        switch self {
+        case .up: L10n.string("Top edge")
+        case .left: L10n.string("Left edge")
+        case .down: L10n.string("Bottom edge")
+        case .right: L10n.string("Right edge")
+        }
+    }
+}

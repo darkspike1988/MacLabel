@@ -30,7 +30,7 @@ extension LabelDocument {
 
     public var counterStart: Int {
         get { counter?.start ?? 1 }
-        set { counter = CounterSpec(start: newValue, step: counter?.step ?? 1, minimumDigits: counterDigits) }
+        set { counter = CounterSpec(start: min(max(newValue, 0), 999_999), step: counter?.step ?? 1, minimumDigits: counterDigits) }
     }
 
     public var counterDigits: Int {
@@ -46,16 +46,14 @@ extension LabelDocument {
         case .barcode(let b): return String(localized: "Barcode \(b.value)", bundle: L10n.bundle)
         case .qr(let q):
             let code = String(localized: "QR code \(q.payload)", bundle: L10n.bundle)
-            return q.caption.map { "\(code), \($0)" } ?? code
+            return q.caption.map { String(localized: "Code \(code), caption \($0)", bundle: L10n.bundle) } ?? code
         case .image: return String(localized: "Picture", bundle: L10n.bundle)
         case nil: return ""
         }
     }
 
-    /// The reading rotation the renderer uses for `roll` (same rule as `LabelGeometry`).
+    /// The reading rotation the renderer uses for `roll`: the override, else `LabelGeometry`'s rule.
     public func effectiveRotation(for roll: LabelRoll) -> ReadingRotation {
-        if let rotation { return rotation }
-        guard let feedMM = roll.feedMM else { return .upright }
-        return roll.acrossMM >= feedMM ? .upright : .clockwise90
+        LabelGeometry(roll: roll, headDots: roll.acrossDots, quality: .text, rotation: rotation).rotation
     }
 }

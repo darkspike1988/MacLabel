@@ -16,7 +16,7 @@ struct ContinuousLengthSection: View {
                     .labelsHidden()
                     .multilineTextAlignment(.trailing)
                     .frame(width: 56)
-                    Text(verbatim: "mm")
+                    Text(UnitLength.millimeters.symbol)
                     Stepper(L10n.string("Length"), value: $model.document.continuousLengthMM, in: 10...1000, step: 5)
                         .labelsHidden()
                 }

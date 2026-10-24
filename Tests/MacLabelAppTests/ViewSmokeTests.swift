@@ -96,6 +96,15 @@ import MacLabelKit
         #expect(d.spokenText(at: 0).contains("12345"))
     }
 
+    @Test func counterStartIsClamped() {
+        var d = LabelDocument()
+        d.counterEnabled = true
+        d.counterStart = 5_000_000
+        #expect(d.counterStart == 999_999)
+        d.counterStart = -3
+        #expect(d.counterStart == 0)
+    }
+
     @Test func effectiveRotationMatchesGeometry() {
         let d = LabelDocument()
         #expect(d.effectiveRotation(for: appRoll11354) == .upright)
@@ -107,13 +116,40 @@ import MacLabelKit
     }
 }
 
+@Suite struct PreviewSizingTests {
+    private let limit = CGSize(width: 560, height: 380)
+
+    @Test func enlargesByWholeFactorsOnly() {
+        // 100 × 60 dots on a 2x display: 560 × 2 / 100 = 11.2 and 380 × 2 / 60 = 12.7 -> factor 11.
+        let size = PreviewSizing.size(pixels: CGSize(width: 100, height: 60), displayScale: 2, limit: limit)
+        #expect(size == CGSize(width: 550, height: 330))
+    }
+
+    @Test func neverBelowOneDevicePixelPerDot() {
+        // A 1193-dot label does not fit 560 pt even at 1:1 on a 2x display (596.5 pt): stay 1:1.
+        let size = PreviewSizing.size(pixels: CGSize(width: 1193, height: 638), displayScale: 2, limit: limit)
+        #expect(size == CGSize(width: 596.5, height: 319))
+        let oneX = PreviewSizing.size(pixels: CGSize(width: 673, height: 378), displayScale: 1, limit: limit)
+        #expect(oneX == CGSize(width: 673, height: 378))
+    }
+
+    @Test func labelOfTheCommonRollIsShownAtOneToOneOnRetina() {
+        let size = PreviewSizing.size(pixels: CGSize(width: 673, height: 378), displayScale: 2, limit: limit)
+        #expect(size == CGSize(width: 336.5, height: 189))
+    }
+
+    @Test func emptyImageHasNoSize() {
+        #expect(PreviewSizing.size(pixels: .zero, displayScale: 2, limit: limit) == .zero)
+    }
+}
+
 // MARK: - Window smoke tests and snapshots
 
 @Suite(.serialized) struct ViewSmokeTests {
     @Test @MainActor func noPrinter() async throws {
         let m = makeViewModel(printers: [], remembered: nil)
         await m.refreshPrinters()
-        try await check(m, name: "no-printer")
+        try await check(m, name: "no-printer", expectsPaper: false)
     }
 
     @Test @MainActor func readyWithTextPreview() async throws {
@@ -166,7 +202,7 @@ import MacLabelKit
         let m = makeViewModel(printers: [appLW450Printer], remembered: nil)
         await m.refreshPrinters()
         m.needsRollChoice = false // keep the sheet out of this shot
-        try await check(m, name: "no-roll")
+        try await check(m, name: "no-roll", expectsPaper: false)
     }
 
     @Test @MainActor func layoutShortcutSwitchesLayout() async throws {
@@ -195,12 +231,27 @@ import MacLabelKit
         }
     }
 
+    @Test @MainActor func windowWithInspectorAtMinimumWidthRenders() async throws {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await m.refreshPrinters()
+        m.document.text = "Keller\nRegal 3"
+        await waitFor { m.previewResult?.pages.count == 1 }
+        await m.monitor.refreshNow()
+        let size = CGSize(width: MainWindow.minWidthWithInspector, height: 560)
+        let window = makeWindow(MainWindow(showsInspector: true).environment(m), size: size, appearance: .aqua)
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(400))
+        let image = try snapshot(of: try #require(window.contentView?.superview ?? window.contentView))
+        #expect(image.pixelsWide >= Int(size.width))
+        try saveIfRequested(image, name: "main-inspector-min-light")
+    }
+
     @Test @MainActor func moreInspectorRenders() async throws {
         let model = makeViewModel(printers: [appLW450Printer], remembered: "11354")
         await model.refreshPrinters()
         model.document.counterEnabled = true
         model.document.csv = try CSVTable(parsing: "Name;Ort\nKiste;Keller\n")
-        let window = makeWindow(MoreInspector().environment(model), size: CGSize(width: 320, height: 600), appearance: .aqua)
+        let window = makeWindow(MoreInspector().environment(model), size: CGSize(width: 260, height: 600), appearance: .aqua)
         defer { window.close() }
         try await Task.sleep(for: .milliseconds(300))
         let image = try snapshot(of: try #require(window.contentView?.superview))
@@ -211,14 +262,18 @@ import MacLabelKit
     // MARK: Helpers
 
     @MainActor
-    private func check(_ model: AppModel, name: String) async throws {
+    private func check(_ model: AppModel, name: String, expectsPaper: Bool = true) async throws {
         for appearance in [NSAppearance.Name.aqua, .darkAqua] {
             let window = makeWindow(model, appearance: appearance)
             try await Task.sleep(for: .milliseconds(400))
             let view = try #require(window.contentView?.superview ?? window.contentView)
             let image = try snapshot(of: view)
             #expect(image.pixelsWide > 0 && image.pixelsHigh > 0)
-            #expect(distinctColors(image) > 1, "\(name) rendered blank")
+            if expectsPaper {
+                #expect(hasBlackPixel(image, inRight: 0.55), "\(name): no black ink in the preview area")
+            } else {
+                #expect(distinctColors(image) > 1, "\(name) rendered blank")
+            }
             try saveIfRequested(image, name: "\(name)-\(appearance == .aqua ? "light" : "dark")")
             window.close()
         }
@@ -255,6 +310,18 @@ private func snapshot(of view: NSView) throws -> NSBitmapImageRep {
     let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
     view.cacheDisplay(in: view.bounds, to: rep)
     return rep
+}
+
+/// Whether the right part of the window (the preview) holds a (near-)black pixel, i.e. printed ink on the paper.
+private func hasBlackPixel(_ rep: NSBitmapImageRep, inRight fraction: Double) -> Bool {
+    let startX = Int(Double(rep.pixelsWide) * (1 - fraction))
+    for y in stride(from: 0, to: rep.pixelsHigh * 4 / 5, by: 2) {
+        for x in stride(from: startX, to: rep.pixelsWide, by: 2) {
+            guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
+            if c.redComponent < 0.1, c.greenComponent < 0.1, c.blueComponent < 0.1 { return true }
+        }
+    }
+    return false
 }
 
 private func distinctColors(_ rep: NSBitmapImageRep) -> Int {

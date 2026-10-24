@@ -24,7 +24,7 @@ struct PreviewPageView: View {
             Label(L10n.string("Doesn't fit on the label"), systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
         } else {
-            Text(verbatim: "\(roll.sizeText) · \(roll.displayName)")
+            Text(roll.sizeAndName)
                 .foregroundStyle(.secondary)
         }
 

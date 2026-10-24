@@ -8,7 +8,13 @@ public struct MainWindow: View {
     @State private var showsRollPicker = false
     @State private var showsInspector = false
 
-    public init() {}
+    /// Editor (300) + preview (380); the inspector adds its own minimum (260) when open.
+    static let minWidth: CGFloat = 720
+    static let minWidthWithInspector: CGFloat = 300 + 380 + 260
+
+    public init() { self.init(showsInspector: false) }
+
+    init(showsInspector: Bool) { _showsInspector = State(initialValue: showsInspector) }
 
     public var body: some View {
         @Bindable var model = model
@@ -18,10 +24,10 @@ public struct MainWindow: View {
             LabelPreviewView(chooseRoll: openRollPicker)
                 .frame(minWidth: 380)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .safeAreaBar(edge: .bottom, spacing: 0) {
             PrintBar()
         }
-        .frame(minWidth: 720, minHeight: 460)
+        .frame(minWidth: showsInspector ? Self.minWidthWithInspector : Self.minWidth, minHeight: 460)
         .navigationTitle(Text(verbatim: "MacLabel"))
         .toolbar {
             ToolbarItem(placement: .navigation) {
