@@ -81,6 +81,16 @@ import Testing
         #expect(final?.pages.count == 5)
     }
 
+    @Test @MainActor func cancelledCallerGetsNil() async {
+        let e = PreviewEngine(debounce: .zero, maxPages: 3)
+        var d = LabelDocument(); d.text = "x"; d.copies = 3
+        // The caller's own task is cancelled after page 1 (not superseded by a newer call).
+        let r = await e.update(document: d, roll: roll, model: lw450) { _ in
+            withUnsafeCurrentTask { $0?.cancel() }
+        }
+        #expect(r == nil)
+    }
+
     @Test @MainActor func errorKeepsTotalLabels() async {
         let e = PreviewEngine(debounce: .zero)
         var d = LabelDocument(); d.layout = .barcode; d.symbology = .ean13; d.barcodeValue = "abc"; d.copies = 7

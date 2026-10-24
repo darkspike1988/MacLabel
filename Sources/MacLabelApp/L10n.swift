@@ -18,4 +18,11 @@ private let appResourceBundle: Bundle = {
 
 enum L10n {
     static var bundle: Bundle { localizedBundle(preferred: Locale.preferredLanguages) }
+
+    static func cancelledText(printed: Int, total: Int, preferred: [String] = Locale.preferredLanguages) -> String {
+        String(
+            localized: "Cancelled after \(printed) of \(total) labels. If needed, press the feed button to eject a partly printed label.",
+            bundle: localizedBundle(preferred: preferred)
+        )
+    }
 }

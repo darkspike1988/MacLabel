@@ -32,7 +32,8 @@ public final class PreviewEngine {
         self.maxPages = maxPages
     }
 
-    /// Returns `nil` when a newer call superseded this one. A newer call also cancels the render in flight.
+    /// Returns `nil` when a newer call superseded this one or the caller's task was cancelled.
+    /// A newer call also cancels the render in flight.
     /// `onFirstPage` receives page 1 alone (with the full `totalLabels`) before the capped series is rendered.
     public func update(
         document: LabelDocument, roll: LabelRoll?, model: PrinterModel,
@@ -48,11 +49,11 @@ public final class PreviewEngine {
 
         if let onFirstPage, maxPages > 1 {
             let first = await run(document: document, roll: roll, model: model, limit: 1)
-            guard mine == generation else { return nil }
+            guard mine == generation, !Task.isCancelled else { return nil }
             if first.error == nil { onFirstPage(first) }
         }
         let result = await run(document: document, roll: roll, model: model, limit: maxPages)
-        return mine == generation ? result : nil
+        return mine == generation && !Task.isCancelled ? result : nil
     }
 
     private func run(document: LabelDocument, roll: LabelRoll?, model: PrinterModel, limit: Int) async -> PreviewResult {

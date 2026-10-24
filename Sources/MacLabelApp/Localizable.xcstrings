@@ -51,6 +51,98 @@
           }
         }
       }
+    },
+    "Cancelled after %lld of %lld labels. If needed, press the feed button to eject a partly printed label.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled after %lld of %lld labels. If needed, press the feed button to eject a partly printed label."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgebrochen nach %lld von %lld Etiketten. Ggf. Vorschubtaste drücken, um ein angefangenes Etikett auszugeben."
+          }
+        }
+      }
+    },
+    "The printer is positioning the label …": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The printer is positioning the label …"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drucker positioniert das Etikett …"
+          }
+        }
+      }
+    },
+    "Printing label %lld of %lld …": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Printing label %lld of %lld …"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drucke Etikett %lld von %lld …"
+          }
+        }
+      }
+    },
+    "%lld labels printed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld label printed."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld labels printed."
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Etikett gedruckt."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Etiketten gedruckt."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "version": "1.0"
