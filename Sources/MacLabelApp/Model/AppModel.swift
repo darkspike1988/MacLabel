@@ -81,6 +81,8 @@ public final class AppModel {
             do {
                 if try await ImportHelpers.importFiles(urls, into: self) { importError = nil }
             } catch is CancellationError {
+            } catch where Task.isCancelled {
+                // A newer import replaced this one; its outcome wins.
             } catch {
                 importError = error.localizedDescription
                 showsImportError = true
