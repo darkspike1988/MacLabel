@@ -19,10 +19,7 @@ struct AddressFields: View {
         }
     }
 
-    private func fill(_ contact: CNContact) {
-        let name = CNContactFormatter.string(from: contact, style: .fullName) ?? ""
-        model.document.addressText = ContactFormatter.addressText(
-            name: name, organization: contact.organizationName, postal: contact.postalAddresses.first?.value
-        )
+    private func fill(_ contact: CNContact, _ address: CNPostalAddress?) {
+        model.document.addressText = ContactFormatter.addressText(for: contact, chosen: address)
     }
 }

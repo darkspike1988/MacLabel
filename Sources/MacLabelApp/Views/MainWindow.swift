@@ -7,7 +7,6 @@ public struct MainWindow: View {
     @Environment(AppModel.self) private var model
     @State private var showsRollPicker = false
     @State private var showsInspector = false
-    @State private var importError: String?
 
     /// Editor (380: the five-segment layout picker needs about that) + preview (420: the 11354 label at 2x is 336.5 pt, plus feed arrow and 2 x 24 padding).
     /// An open inspector adds its own `inspectorColumnWidth` minimum on top of this.
@@ -51,13 +50,12 @@ public struct MainWindow: View {
         }
         .dropDestination(for: URL.self) { urls, _ in
             guard urls.contains(where: { ImportHelpers.kind(of: $0) != nil }) else { return false }
-            Task { await importDropped(urls) }
+            model.startImport(urls)
             return true
         }
-        .alert(L10n.string("The file could not be opened."), isPresented: showsImportError) {
-            Button(L10n.string("OK")) {}
+        .alert(L10n.string("The file could not be opened."), isPresented: $model.showsImportError) {
         } message: {
-            Text(importError ?? "")
+            Text(model.importError ?? "")
         }
         .sheet(isPresented: $model.needsRollChoice) {
             FirstRunRollSheet()
@@ -71,15 +69,6 @@ public struct MainWindow: View {
             await model.refreshPrinters()
             await model.monitor.refreshNow()
         }
-    }
-
-    private var showsImportError: Binding<Bool> {
-        Binding(get: { importError != nil }, set: { if !$0 { importError = nil } })
-    }
-
-    private func importDropped(_ urls: [URL]) async {
-        do { try await ImportHelpers.importFiles(urls, into: model) }
-        catch { importError = error.localizedDescription }
     }
 
     private func openRollPicker() { showsRollPicker = true }

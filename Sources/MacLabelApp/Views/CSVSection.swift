@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 struct CSVSection: View {
     @Environment(AppModel.self) private var model
     @State private var choosingFile = false
-    @State private var loadError: String?
 
     var body: some View {
         Section {
@@ -16,21 +15,18 @@ struct CSVSection: View {
             } else {
                 Button(L10n.string("Choose CSV File …"), systemImage: "tablecells", action: chooseFile)
             }
-            if let loadError {
-                Label(loadError, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-            }
         } header: {
             Text(verbatim: "CSV")
         } footer: {
             Text(L10n.string("Each row becomes a label. Use {column} placeholders, or drop a CSV file here."))
         }
         .fileImporter(isPresented: $choosingFile, allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .plainText]) { result in
-            if case .success(let url) = result { Task { _ = await load([url]) } }
+            if case .success(let url) = result { model.startImport([url]) }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            guard urls.contains(where: { ImportHelpers.kind(of: $0) == .csv }) else { return false }
-            Task { _ = await load(urls) }
+            let csvs = urls.filter { ImportHelpers.kind(of: $0) == .csv }
+            guard !csvs.isEmpty else { return false }
+            model.startImport(csvs)
             return true
         }
     }
@@ -39,17 +35,5 @@ struct CSVSection: View {
 
     private func remove() {
         model.document.csv = nil
-        loadError = nil
-    }
-
-    private func load(_ urls: [URL]) async -> Bool {
-        do {
-            let handled = try await ImportHelpers.importFiles(urls, into: model)
-            if handled { loadError = nil }
-            return handled
-        } catch {
-            loadError = error.localizedDescription
-            return false
-        }
     }
 }

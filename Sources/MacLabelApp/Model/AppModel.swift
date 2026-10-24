@@ -49,6 +49,9 @@ public final class AppModel {
     /// Set when a printer is selected for which no roll is remembered; asked at most once per printer.
     /// The roll sheet sets it back to `false` when dismissed.
     public var needsRollChoice = false
+    /// The last failed import (shown in an alert); a successful import clears it.
+    public private(set) var importError: String?
+    public var showsImportError = false
     public private(set) var printPhase: PrintPhase = .idle
     public let monitor: PrinterMonitor
 
@@ -56,6 +59,7 @@ public final class AppModel {
     @ObservationIgnored private let preview: PreviewEngine
     @ObservationIgnored private var previewTask: Task<Void, Never>?
     @ObservationIgnored private var rollTask: Task<Void, Never>?
+    @ObservationIgnored private var importTask: Task<Void, Never>?
     @ObservationIgnored private var printTask: Task<Void, any Error>?
     @ObservationIgnored private var askedRollFor: Set<String> = []
     @ObservationIgnored private var printedSoFar = 0
@@ -69,6 +73,23 @@ public final class AppModel {
         monitor.rediscover = { [weak self] in await self?.refreshPrinters() }
         schedulePreview()
     }
+
+    /// Imports the first supported file of a drop or file choice. A newer import cancels the one in flight.
+    public func startImport(_ urls: [URL]) {
+        importTask?.cancel()
+        importTask = Task {
+            do {
+                if try await ImportHelpers.importFiles(urls, into: self) { importError = nil }
+            } catch is CancellationError {
+            } catch {
+                importError = error.localizedDescription
+                showsImportError = true
+            }
+        }
+    }
+
+    /// Waits for the import started last.
+    public func finishImport() async { await importTask?.value }
 
     /// Reads the attached printers and keeps or picks the selection (first LW-Classic printer).
     public func refreshPrinters() async {

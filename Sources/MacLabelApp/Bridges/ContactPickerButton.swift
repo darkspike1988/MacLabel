@@ -6,7 +6,7 @@ import SwiftUI
 /// A button that shows the system contact picker (out of process, so no Contacts permission is needed).
 struct ContactPickerButton: NSViewRepresentable {
     let title: String
-    let onPick: (CNContact) -> Void
+    let onPick: (CNContact, CNPostalAddress?) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -26,11 +26,12 @@ struct ContactPickerButton: NSViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, @MainActor CNContactPickerDelegate {
-        var onPick: (CNContact) -> Void = { _ in }
+        var onPick: (CNContact, CNPostalAddress?) -> Void = { _, _ in }
         private let picker = CNContactPicker()
 
         override init() {
             super.init()
+            picker.displayedKeys = [CNContactPostalAddressesKey]
             picker.delegate = self
         }
 
@@ -39,7 +40,11 @@ struct ContactPickerButton: NSViewRepresentable {
         }
 
         func contactPicker(_ picker: CNContactPicker, didSelect contact: CNContact) {
-            onPick(contact)
+            onPick(contact, nil)
+        }
+
+        func contactPicker(_ picker: CNContactPicker, didSelect property: CNContactProperty) {
+            onPick(property.contact, property.value as? CNPostalAddress)
         }
     }
 }

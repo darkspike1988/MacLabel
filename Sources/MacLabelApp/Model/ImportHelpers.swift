@@ -25,7 +25,9 @@ public enum ImportHelpers {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let data = try Data(contentsOf: url)
-        guard let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .windowsCP1252) else {
+        let utf16 = data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF])
+        guard let text = (utf16 ? String(data: data, encoding: .utf16) : nil)
+            ?? String(data: data, encoding: .utf8) ?? String(data: data, encoding: .windowsCP1252) else {
             throw CocoaError(.fileReadInapplicableStringEncoding)
         }
         let table = try CSVTable(parsing: text)
@@ -33,11 +35,21 @@ public enum ImportHelpers {
         return table
     }
 
+    /// Longest edge, in pixels, of a loaded picture; smaller pictures keep their size.
+    static let maxImagePixels = 4096
+
+    /// Decodes eagerly (inside the sandbox access window), applies EXIF orientation and caps the size.
     public static func loadImage(url: URL) throws -> CGImage {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxImagePixels,
+        ]
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { throw UnreadableImage() }
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { throw UnreadableImage() }
         return image
     }
 
@@ -53,9 +65,12 @@ public enum ImportHelpers {
         guard let url = urls.first(where: { kind(of: $0) != nil }), let kind = kind(of: url) else { return false }
         switch kind {
         case .csv:
-            model.document.csv = try await loadCSVInBackground(url: url)
+            let table = try await loadCSVInBackground(url: url)
+            try Task.checkCancellation()
+            model.document.csv = table
         case .image:
             let image = try await loadImageInBackground(url: url)
+            try Task.checkCancellation()
             model.document.image = image
             model.document.layout = .image
         }
