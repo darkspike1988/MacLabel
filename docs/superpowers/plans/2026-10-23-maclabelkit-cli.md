@@ -321,9 +321,9 @@ Leere Zeilen am Labelende werden ebenfalls als `1B 66 01 k` gesendet.
 **Interfaces:**
 - Consumes: `LabelRoll`, `PrinterModel`, `PrintQuality`, `MonochromeBitmap`
 - Produces:
-  - `public enum ReadingRotation: Sendable { case none, clockwise90, upsideDown, counterClockwise90 }`
+  - `public enum ReadingRotation: Sendable { case upright, clockwise90, upsideDown, counterClockwise90 }`
   - `public struct LabelGeometry: Sendable { public init(roll: LabelRoll, headDots: Int, quality: PrintQuality, rotation: ReadingRotation? = nil, continuousLengthMM: Double? = nil); public let headDots: Int; public let lengthLines: Int; public let printableRect: CGRect /* in Kopfkoordinaten: x Dots, y Zeilen */; public let rotation: ReadingRotation; public let readingSizePoints: CGSize /* bedruckbarer Bereich in Lesekoordinaten, 1/72" */; public func headTransform() -> CGAffineTransform /* Lesepunkte → Kopfpixel */ }`
-    - Default-Rotation: `.none`, wenn `acrossMM >= feedMM` oder bei Endlos, sonst `.clockwise90`.
+    - Default-Rotation: `.upright`, wenn `acrossMM >= feedMM` oder bei Endlos, sonst `.clockwise90`.
     - `lengthLines = feedDots * lpi / 300`.
     - `printableRect`: x = `offsetDots + originAcrossDots`, y = `originFeedDots * lpi/300`, Breite = `widthDots`, Höhe = `lengthDots * lpi/300`.
     - Endlos: `lengthLines` aus `continuousLengthMM` (Default 50 mm), `printableRect.y = 0`.
@@ -348,7 +348,7 @@ Leere Zeilen am Labelende werden ebenfalls als `1B 66 01 k` gesendet.
 ```swift
 let r11354 = MediaCatalog.bundled.roll(id: "11354")!, r99010 = MediaCatalog.bundled.roll(sku: "99010")!
 @Test func geometry11354() { let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
-  #expect(g.rotation == .none); #expect(g.lengthLines == 375); #expect(Int(g.printableRect.width) == 651) }
+  #expect(g.rotation == .upright); #expect(g.lengthLines == 375); #expect(Int(g.printableRect.width) == 651) }
 @Test func geometry600lpiDoublesLines() { #expect(LabelGeometry(roll: r11354, headDots: 672, quality: .graphics).lengthLines == 750) }
 @Test func addressIsRotated() { #expect(LabelGeometry(roll: r99010, headDots: 672, quality: .text).rotation == .clockwise90) }
 @Test func textFitsAndIsCentered() throws { let g = LabelGeometry(roll: r11354, headDots: 672, quality: .text)
