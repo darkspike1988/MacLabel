@@ -8,9 +8,11 @@ public struct MainWindow: View {
     @State private var showsRollPicker = false
     @State private var showsInspector = false
 
-    /// Editor (300) + preview (380); the inspector adds its own minimum (260) when open.
-    static let minWidth: CGFloat = 720
-    static let minWidthWithInspector: CGFloat = 300 + 380 + 260
+    /// Editor (380: the five-segment layout picker needs about that) + preview (420: the 11354 label at 2x is 336.5 pt, plus feed arrow and 2 x 24 padding).
+    /// An open inspector adds its own `inspectorColumnWidth` minimum on top of this.
+    nonisolated static let editorMinWidth: CGFloat = 420
+    nonisolated static let previewMinWidth: CGFloat = 420
+    nonisolated static let minWidth: CGFloat = editorMinWidth + previewMinWidth
 
     public init() { self.init(showsInspector: false) }
 
@@ -18,16 +20,17 @@ public struct MainWindow: View {
 
     public var body: some View {
         @Bindable var model = model
-        HSplitView {
+        HStack(spacing: 0) {
             EditorForm()
-                .frame(minWidth: 300, idealWidth: 360, maxWidth: 480)
+                .frame(minWidth: Self.editorMinWidth, idealWidth: 420, maxWidth: 480)
+            Divider()
             LabelPreviewView(chooseRoll: openRollPicker)
-                .frame(minWidth: 380)
+                .frame(minWidth: Self.previewMinWidth)
         }
         .safeAreaBar(edge: .bottom, spacing: 0) {
             PrintBar()
         }
-        .frame(minWidth: showsInspector ? Self.minWidthWithInspector : Self.minWidth, minHeight: 460)
+        .frame(minWidth: Self.minWidth, minHeight: 460)
         .navigationTitle(Text(verbatim: "MacLabel"))
         .toolbar {
             ToolbarItem(placement: .navigation) {

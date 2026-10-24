@@ -29,7 +29,7 @@ struct LabelPreviewView: View {
                 NoRollView(hasPrinter: !model.printers.isEmpty, chooseRoll: chooseRoll)
             }
         }
-        .padding(32)
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .underPageBackgroundColor))
     }

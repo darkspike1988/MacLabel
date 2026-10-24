@@ -116,6 +116,23 @@ import MacLabelKit
     }
 }
 
+@Suite struct RollPickerSelectionTests {
+    @Test func selectionStaysWhileVisibleElseFirstResult() {
+        let all = RollPicker.groups(for: "", catalog: .bundled)
+        #expect(RollPicker.selection(afterFilter: all, keeping: "11354") == "11354")
+        let filtered = RollPicker.groups(for: "32x57", catalog: .bundled)
+        #expect(RollPicker.selection(afterFilter: filtered, keeping: "99010") == filtered.first?.first?.id)
+        #expect(RollPicker.selection(afterFilter: [], keeping: "11354") == nil)
+    }
+
+    @Test func choosingByIDAndFirst() {
+        let groups = RollPicker.groups(for: "32x57", catalog: .bundled)
+        #expect(RollPicker.roll(ids: ["1933084"], in: groups)?.id == "1933084")
+        #expect(RollPicker.roll(ids: [], in: groups)?.id == groups.first?.first?.id)
+        #expect(RollPicker.roll(ids: ["nope"], in: groups) == nil)
+    }
+}
+
 @Suite struct PreviewSizingTests {
     private let limit = CGSize(width: 560, height: 380)
 
@@ -131,6 +148,13 @@ import MacLabelKit
         #expect(size == CGSize(width: 596.5, height: 319))
         let oneX = PreviewSizing.size(pixels: CGSize(width: 673, height: 378), displayScale: 1, limit: limit)
         #expect(oneX == CGSize(width: 673, height: 378))
+    }
+
+    @Test func commonRollFitsMinimumPreviewPaneOnRetina() {
+        // 24 pt padding on both sides, feed arrow (about 14 pt) and spacing (12 pt) beside the label.
+        let pane = MainWindow.previewMinWidth - 2 * 24 - 12 - 14
+        let size = PreviewSizing.size(pixels: CGSize(width: 673, height: 378), displayScale: 2, limit: limit)
+        #expect(size.width <= pane)
     }
 
     @Test func labelOfTheCommonRollIsShownAtOneToOneOnRetina() {
@@ -237,12 +261,18 @@ import MacLabelKit
         m.document.text = "Keller\nRegal 3"
         await waitFor { m.previewResult?.pages.count == 1 }
         await m.monitor.refreshNow()
-        let size = CGSize(width: MainWindow.minWidthWithInspector, height: 560)
-        let window = makeWindow(MainWindow(showsInspector: true).environment(m), size: size, appearance: .aqua)
+        // Shrink the window below any sane size and measure what the window really allows.
+        let window = makeWindow(MainWindow(showsInspector: true).environment(m), size: CGSize(width: 1400, height: 560), appearance: .aqua)
         defer { window.close() }
-        try await Task.sleep(for: .milliseconds(400))
+        try await Task.sleep(for: .milliseconds(300))
+        window.setContentSize(CGSize(width: 200, height: 200))
+        try await Task.sleep(for: .milliseconds(500))
+        let width = window.contentLayoutRect.width
+        // Content minimum plus the inspector column (260 minimum, 300 ideal), not the 940 of round 1.
+        #expect(width >= MainWindow.minWidth + 260)
+        #expect(width <= MainWindow.minWidth + 300 + 10, "min width \(width) is larger than content + inspector")
         let image = try snapshot(of: try #require(window.contentView?.superview ?? window.contentView))
-        #expect(image.pixelsWide >= Int(size.width))
+        #expect(hasBlackPixel(image, inRight: 0.5))
         try saveIfRequested(image, name: "main-inspector-min-light")
     }
 

@@ -30,28 +30,41 @@ struct RollPicker: View {
             if groups.isEmpty {
                 ContentUnavailableView.search(text: query)
             } else {
-                // Arrow keys move the selection; Return or a double-click chooses the roll.
-                List(selection: $selection) {
-                    ForEach(groups, id: \.first?.id) { group in
-                        Section(group.first?.sizeText ?? "") {
-                            ForEach(group) { roll in
-                                RollRow(roll: roll, isCurrent: roll.id == current?.id)
-                                    .tag(roll.id)
-                            }
-                        }
-                    }
-                }
-                .listStyle(.inset)
-                .focused($focus, equals: .list)
-                .contextMenu(forSelectionType: String.self) { _ in } primaryAction: { ids in
-                    choose(ids: ids, in: groups)
-                }
+                rollList(groups)
             }
         }
         .onAppear {
             selection = current?.id
             focus = .search
         }
+    }
+
+    private func rollList(_ groups: [[LabelRoll]]) -> some View {
+        // Arrow keys move the selection; Return or a double-click chooses the roll.
+        List(selection: $selection) {
+            ForEach(groups, id: \.first?.id) { group in
+                Section(group.first?.sizeText ?? "") {
+                    ForEach(group) { roll in
+                        row(roll)
+                    }
+                }
+            }
+        }
+        .listStyle(.inset)
+        .focused($focus, equals: .list)
+        .onChange(of: query) {
+            selection = Self.selection(afterFilter: self.groups(for: query), keeping: selection)
+        }
+        .contextMenu(forSelectionType: String.self) { _ in } primaryAction: { ids in
+            choose(ids: ids, in: groups)
+        }
+    }
+
+    private func row(_ roll: LabelRoll) -> some View {
+        RollRow(roll: roll, isCurrent: roll.id == current?.id)
+            .tag(roll.id)
+            // A popover has no confirm button, so a click chooses at once.
+            .onTapGesture { onSelect(roll) }
     }
 
     private func moveIntoList() -> KeyPress.Result {
@@ -62,12 +75,29 @@ struct RollPicker: View {
         return .handled
     }
 
+    private func groups(for query: String) -> [[LabelRoll]] {
+        Self.groups(for: query, catalog: .bundled, headDots: headDots)
+    }
+
     private func chooseFirst(of groups: [[LabelRoll]]) {
-        if let roll = groups.first?.first { onSelect(roll) }
+        if let roll = Self.roll(ids: [], in: groups) { onSelect(roll) }
     }
 
     private func choose(ids: Set<String>, in groups: [[LabelRoll]]) {
-        if let roll = groups.joined().first(where: { ids.contains($0.id) }) { onSelect(roll) }
+        if let roll = Self.roll(ids: ids, in: groups) { onSelect(roll) }
+    }
+
+    /// The first roll whose id is in `ids`; for an empty `ids` the first roll shown.
+    nonisolated static func roll(ids: Set<String>, in groups: [[LabelRoll]]) -> LabelRoll? {
+        let rolls = groups.joined()
+        return ids.isEmpty ? rolls.first : rolls.first { ids.contains($0.id) }
+    }
+
+    /// The selection after the result list changed: kept while still visible, else the first result (nil if none).
+    nonisolated static func selection(afterFilter groups: [[LabelRoll]], keeping selection: String?) -> String? {
+        let rolls = groups.joined()
+        if let selection, rolls.contains(where: { $0.id == selection }) { return selection }
+        return rolls.first?.id
     }
 
     /// The search result (or, for an empty query, the whole catalog sorted by size), grouped by
