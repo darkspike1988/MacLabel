@@ -91,8 +91,7 @@ public struct MenuBarPanel: View {
             preview = await engine.update(document: document, roll: model.roll, model: model.effectiveModel)
         }
         .task {
-            await model.refreshPrinters()
-            if model.monitor.pollingEnabled { await model.monitor.refreshNow() }
+            await model.surfaceOpened()
         }
     }
 

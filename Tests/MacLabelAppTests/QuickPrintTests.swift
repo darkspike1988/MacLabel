@@ -50,6 +50,26 @@ import Testing
         #expect(!error.localizedDescription.contains("CancellationError"))
     }
 
+    /// Cancelled while the labels are checked (before the device): still the plain cancel sentence.
+    @Test func cancellationDuringContentCheckIsPlainLanguage() async {
+        let log = DeviceLog()
+        let p = printer([appLW450Printer], remembered: "11354", log: log)
+        let job = Task { () -> Result<Int, QuickPrintError> in
+            withUnsafeCurrentTask { $0?.cancel() }
+            do throws(QuickPrintError) { return .success(try await p.printText("x", copies: 1, rollQuery: nil)) } catch { return .failure(error) }
+        }
+        guard case .failure(let error) = await job.value else { Issue.record("printed despite cancel"); return }
+        #expect(error == .failed(QuickPrintError.cancelledText))
+        #expect(log.opens == 0)
+    }
+
+    @Test func noPrinterSaysNoPrinterConnected() async {
+        let p = printer([], remembered: "11354")
+        await #expect(throws: QuickPrintError.noPrinter(L10n.string("No printer connected."))) {
+            try await p.printText("x", copies: 1, rollQuery: nil)
+        }
+    }
+
     @Test func otherErrorsBecomeFailedWithTheirDescription() {
         #expect(QuickPrintError(CancellationError()) == .failed(QuickPrintError.cancelledText))
         #expect(QuickPrintError(PrintError.nothingToPrint) == .failed(PrintError.nothingToPrint.localizedDescription))

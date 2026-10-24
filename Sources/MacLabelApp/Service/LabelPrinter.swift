@@ -79,7 +79,7 @@ public actor LabelPrinter {
         let result: PrinterState
         do {
             let status = try await transport.status()
-            result = status.canPrint ? .ready(name: name) : .notReady(name: name, reason: Self.reason(status))
+            result = status.canPrint ? .ready(name: name) : .notReady(name: name, reason: PrintError.reason(status))
         } catch {
             result = Self.state(for: error, name: name)
         }
@@ -95,7 +95,8 @@ public actor LabelPrinter {
         preferences.setLastRollID(roll.id, forPrinterSerial: printer.serialNumber)
     }
 
-    /// Prints all labels of `request` as one job. Waits for the gate (FIFO), then for the
+    /// Prints all labels of `request` as one job. Renders and checks the content first (no device),
+    /// then waits for the gate (FIFO), then for the
     /// `JobSpacing` pause after the previous job's form feed (device not open meanwhile; reported
     /// once as `.positioning`), then prints. The transport is closed on success, error and cancellation.
     /// `remember`: store the roll as this printer's roll afterwards (window and menu bar: yes; an
@@ -111,6 +112,8 @@ public actor LabelPrinter {
         }
         activePrints[printer.id, default: 0] += 1
         defer { activePrints[printer.id, default: 0] -= 1 }
+        // Content errors (overflow beyond the preview, …) before the pause and before the device is opened.
+        let rendered = try await Self.render(request)
         await acquireGate()
         defer { releaseGate() }
 
@@ -129,8 +132,9 @@ public actor LabelPrinter {
             throw PrintError.transport(error)
         }
         do {
+            // The pause above already ran with the device closed; `PrintService` only records the form feed.
             try await PrintService.print(
-                request, using: transport, spacing: spacing,
+                rendered, using: transport, spacing: spacing, waitForSpacing: false,
                 progress: { onPhase(.label(done: $0, total: $1)) }
             )
         } catch {
@@ -139,6 +143,11 @@ public actor LabelPrinter {
         }
         await transport.close()
         if remember { self.remember(request.roll, for: printer) }
+    }
+
+    /// Renders off the actor, so status queries are answered meanwhile.
+    @concurrent private static func render(_ request: PrintRequest) async throws -> RenderedJob {
+        try PrintService.renderJob(request)
     }
 
     /// Waits until no other `print`/`state` uses a device; waiters are served in arrival order.
@@ -166,12 +175,5 @@ public actor LabelPrinter {
         case .some(let transportError): .error(PrintError.transport(transportError).localizedDescription)
         case nil: .error(error.localizedDescription)
         }
-    }
-
-    private static func reason(_ status: LWStatus) -> String {
-        if status.isPaperOut { return localizedString("out of paper") }
-        if status.isJammed { return localizedString("paper jam") }
-        if status.hasError { return localizedString("printer error") }
-        return localizedString("not ready")
     }
 }

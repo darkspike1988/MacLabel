@@ -136,7 +136,7 @@ private func request() -> PrintRequest { PrintRequest(contents: [.text(.init(tex
 @Test func paperOutState() async {
     let t = ScriptedTransport(statuses: [0xA0])
     let p = LabelPrinter(factory: StubFactory(printers: [lw450Printer], transport: t), preferences: tmpPrefs(), formFeedClock: MemoryClock())
-    #expect(await p.state(for: lw450Printer) == .notReady(name: "LabelWriter 450", reason: localizedString("out of paper")))
+    #expect(await p.state(for: lw450Printer) == .notReady(name: "LabelWriter 450", reason: PrintError.reason(LWStatus(raw: 0xA0))))
     #expect(await t.closed)
 }
 
@@ -198,32 +198,61 @@ private func request() -> PrintRequest { PrintRequest(contents: [.text(.init(tex
     #expect(log.events == ["open", "close", "open", "close"])
 }
 
+/// A printer whose last form feed was 9.5 s before the injected `now`: 500 ms of positioning pause,
+/// held open by `sleeper` until the test releases it.
+private func pausingPrinter(log: EventLog, sleeper: ManualSleeper) -> LabelPrinter {
+    pausingPrinter(log: log, sleep: { try await sleeper.sleep($0) })
+}
+
+private func pausingPrinter(log: EventLog, sleep: @escaping @Sendable (Duration) async throws -> Void) -> LabelPrinter {
+    let now = Date(timeIntervalSinceReferenceDate: 1000)
+    let clock = MemoryClock()
+    clock.recordFormFeed(serial: "S1", at: now.addingTimeInterval(-9.5))
+    return LabelPrinter(
+        factory: RecordingFactory(log: log), preferences: tmpPrefs(), formFeedClock: clock,
+        sleep: sleep, now: { now }
+    )
+}
+
 @Test func stateDuringPrintIsPrintingWithoutOpening() async throws {
     let log = EventLog()
-    let clock = MemoryClock()
-    // Previous form feed 9.7 s ago: ~300 ms positioning pause before the device is opened.
-    clock.recordFormFeed(serial: "S1", at: Date().addingTimeInterval(-9.7))
-    let phases = PhaseLog()
-    let p = LabelPrinter(factory: RecordingFactory(log: log), preferences: tmpPrefs(), formFeedClock: clock)
-    let job = Task { try await p.print(request(), on: lw450Printer) { phases.add($0) } }
-    while phases.events.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+    let sleeper = ManualSleeper()
+    let p = pausingPrinter(log: log, sleeper: sleeper)
+    let job = Task { try await p.print(request(), on: lw450Printer) { _ in } }
+    await waitForAsync { await sleeper.sleepCount == 1 }
     #expect(await p.state(for: lw450Printer) == .printing(name: "LabelWriter 450"))
     #expect(log.events.isEmpty)
+    await sleeper.advance()
     try await job.value
     #expect(log.events == ["open", "close"])
 }
 
 @Test func positioningEventBeforeLabels() async throws {
-    let clock = MemoryClock()
-    clock.recordFormFeed(serial: "S1", at: Date().addingTimeInterval(-9.8))
+    let log = EventLog()
+    let sleeper = ManualSleeper()
     let phases = PhaseLog()
-    let p = LabelPrinter(factory: RecordingFactory(log: EventLog()), preferences: tmpPrefs(), formFeedClock: clock)
-    try await p.print(request(), on: lw450Printer) { phases.add($0) }
-    let events = phases.events
-    #expect(events.count == 2)
-    guard case .positioning(let remaining) = events.first else { Issue.record("no positioning event"); return }
-    #expect(remaining > .zero && remaining <= .milliseconds(200))
-    #expect(events.last == .label(done: 1, total: 1))
+    let p = pausingPrinter(log: log, sleeper: sleeper)
+    let job = Task { try await p.print(request(), on: lw450Printer) { phases.add($0) } }
+    await waitForAsync { await sleeper.sleepCount == 1 }
+    #expect(await sleeper.requests == [.milliseconds(500)])
+    #expect(phases.events == [.positioning(remaining: .milliseconds(500))])
+    #expect(log.events.isEmpty)
+    await sleeper.advance()
+    try await job.value
+    #expect(phases.events == [.positioning(remaining: .milliseconds(500)), .label(done: 1, total: 1)])
+}
+
+/// Overflow beyond the previewed labels is found before the pause and before the device is opened.
+@Test func overflowIsRejectedBeforePauseAndOpening() async {
+    let log = EventLog()
+    // The pause is logged (not held), so a wrong order shows up as "sleep" instead of hanging.
+    let p = pausingPrinter(log: log, sleep: { _ in log.add("sleep") })
+    var long = request()
+    long.contents = [.text(.init(text: "kurz")), .text(.init(text: String(repeating: "Überlauf ", count: 200)))]
+    await #expect(throws: PrintError.overflow(labelIndex: 1)) {
+        try await p.print(long, on: lw450Printer) { _ in }
+    }
+    #expect(log.events.isEmpty)
 }
 
 @Test func noPositioningEventWithoutRecentFormFeed() async throws {

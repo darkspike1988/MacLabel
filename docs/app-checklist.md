@@ -109,4 +109,4 @@ maclabel status
 maclabel rolls search 32x57
 ```
 
-Prüfen: `status` zeigt den LabelWriter 450 als bereit, `rolls search` listet 11354. App und CLI merken sich die Rolle getrennt; das ist so gewollt.
+Prüfen: `status` zeigt den LabelWriter 450 als bereit, `rolls search` listet 11354. App und CLI merken sich die Rolle getrennt; das ist so gewollt. Auch die Druckpause teilen sie nicht: Nach einem Druck aus der App etwa 10 s warten, bevor du mit dem Kommandozeilenwerkzeug druckst (und umgekehrt).

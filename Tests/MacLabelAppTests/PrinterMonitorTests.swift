@@ -20,19 +20,59 @@ import MacLabelKit
 
     @Test @MainActor func monitorPollsOnlyWhenVisible() async throws {
         let factory = AppStubFactory(list: [appLW450Printer])
-        let m = monitor(factory)
-        try await Task.sleep(for: .milliseconds(100))
+        let sleeper = ManualSleeper()
+        let m = monitor(factory, sleep: { try await sleeper.sleep($0) })
+        #expect(!m.isPolling)
         #expect(factory.log.statusQueries == 0)
         m.visibilityChanged(visible: true)
-        // Wait for two polls; a busy main actor (window tests running in parallel) may delay them.
-        await waitFor(timeout: .seconds(3)) { factory.log.statusQueries >= 2 }
-        #expect(factory.log.statusQueries >= 2)
+        await waitForAsync { await sleeper.sleepCount == 1 }
+        #expect(factory.log.statusQueries == 1)
+        await sleeper.advance()
+        await waitForAsync { await sleeper.sleepCount == 2 }
+        #expect(factory.log.statusQueries == 2)
         #expect(m.state == .ready(name: "LabelWriter 450"))
         m.visibilityChanged(visible: false)
-        try await Task.sleep(for: .milliseconds(30))
-        let stopped = factory.log.statusQueries
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(factory.log.statusQueries == stopped)
+        #expect(!m.isPolling)
+        // Hiding cancels the pending sleep; the loop then ends without another query.
+        await waitForAsync { await sleeper.pendingCount == 0 }
+        for _ in 0..<20 { await Task.yield() }
+        #expect(factory.log.statusQueries == 2)
+        #expect(await sleeper.sleepCount == 2)
+    }
+
+    /// With automatic polling off (or nothing visible) no loop restarts after a print; the status
+    /// must not stay "printing".
+    @Test @MainActor func resumeWithoutPollingDoesNotStayPrinting() async {
+        let factory = AppStubFactory(list: [appLW450Printer])
+        let m = monitor(factory)
+        m.pollingEnabled = false
+        await m.refreshNow()
+        #expect(m.state == .ready(name: "LabelWriter 450"))
+        m.pause()
+        #expect(m.state == .printing(name: "LabelWriter 450"))
+        m.resume()
+        #expect(!m.isPolling)
+        #expect(m.state == .ready(name: "LabelWriter 450"))
+        // Nothing visible: no device query after the print.
+        #expect(factory.log.statusQueries == 1)
+    }
+
+    /// Visible with polling off: resuming asks the printer once.
+    @Test @MainActor func resumeWhileVisibleWithoutPollingAsksOnce() async {
+        let factory = AppStubFactory(list: [appLW450Printer])
+        let m = monitor(factory)
+        m.pollingEnabled = false
+        m.visibilityChanged(visible: true)
+        #expect(!m.isPolling)
+        m.pause()
+        #expect(m.state == .printing(name: "LabelWriter 450"))
+        m.resume()
+        #expect(!m.isPolling)
+        // The query is counted before its answer is applied; wait for the state.
+        await waitFor { m.state == .ready(name: "LabelWriter 450") }
+        #expect(m.state == .ready(name: "LabelWriter 450"))
+        #expect(factory.log.statusQueries == 1)
+        m.visibilityChanged(visible: false)
     }
 
     @Test @MainActor func visibilityIsCounted() async throws {

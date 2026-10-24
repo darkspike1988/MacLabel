@@ -27,6 +27,8 @@ public final class PrinterMonitor {
     @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
     @ObservationIgnored private var visibleCount = 0
     @ObservationIgnored private var paused = false
+    /// The state shown before `pause()`, put back by `resume()`.
+    @ObservationIgnored private var stateBeforePause: PrinterState?
     private var loop: Task<Void, Never>?
 
     public init(
@@ -48,14 +50,23 @@ public final class PrinterMonitor {
     /// Stops polling (during a print) and shows the target as printing; `resume()` restarts
     /// polling if something is visible.
     public func pause() {
+        if !paused { stateBeforePause = state }
         paused = true
         if let target { state = .printing(name: target.model.name) }
         updateLoop()
     }
 
+    /// Ends the print pause. "Printing" never outlives the print: the previous state comes back, and
+    /// when no polling loop starts (automatic polling off) but a window or panel is visible, the
+    /// printer is asked once.
     public func resume() {
         paused = false
+        if case .printing = state, let previous = stateBeforePause { state = previous }
+        stateBeforePause = nil
         updateLoop()
+        if loop == nil, visibleCount > 0 {
+            Task { [weak self] in _ = await self?.poll() }
+        }
     }
 
     /// One poll right away, independent of visibility.

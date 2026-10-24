@@ -281,3 +281,111 @@ private struct FixedClock: FormFeedClock {
         #expect(ready.printBlockReason == nil && !ready.isPrinting)
     }
 }
+
+// MARK: - Final review fixes
+
+/// One wording for "no printer" in the app: the print bar's reason and the failed print say the same.
+@Test @MainActor func noPrinterTextIsTheSameEverywhere() async {
+    let m = AppModel(
+        printer: LabelPrinter(factory: AppStubFactory(list: []), preferences: appPrefs(), formFeedClock: AppNoStampClock()),
+        preview: PreviewEngine(debounce: .zero, maxPages: 1), defaults: tempDefaults()
+    )
+    m.roll = appRoll11354
+    m.document.text = "x"
+    await m.print(allowOverflow: false)
+    #expect(m.printPhase == .failed(L10n.string("No printer connected.")))
+    #expect(m.printBlockReason == L10n.string("No printer connected."))
+    #expect(String(localized: "No printer connected.", bundle: localizedBundle(preferred: ["de"])) == "Kein Drucker angeschlossen.")
+}
+
+/// Overflow on a label after the 50 previewed ones: Print asks "Print anyway?" instead of failing,
+/// and the device is not opened.
+@Test @MainActor func overflowBeyondPreviewAsksAgain() async throws {
+    let log = DeviceLog()
+    let printer = LabelPrinter(
+        factory: AppStubFactory(list: [appLW450Printer], log: log), preferences: appPrefs(remembered: "11354"),
+        formFeedClock: AppNoStampClock()
+    )
+    let m = AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: 1), defaults: tempDefaults())
+    await m.refreshPrinters()
+    m.document.csv = try CSVTable(parsing: "name\nkurz\n\(String(repeating: "Überlauf ", count: 200))\n")
+    m.document.text = "{name}"
+    await waitFor { m.previewResult?.totalLabels == 2 }
+    #expect(m.previewResult?.overflowIndices.isEmpty == true)
+    m.requestPrint()
+    await waitFor { m.confirmsOverflowPrint }
+    #expect(m.confirmsOverflowPrint)
+    await waitFor { !m.isPrinting }
+    #expect(m.printPhase == .idle)
+    #expect(log.opens == 0)
+}
+
+/// Opening the window or the panel asks the printer once, even with automatic polling off.
+@Test @MainActor func openingAsksOnceWithoutPolling() async {
+    let log = DeviceLog()
+    let defaults = tempDefaults()
+    defaults.set(false, forKey: AppSettings.statusPollingKey)
+    let printer = LabelPrinter(
+        factory: AppStubFactory(list: [appLW450Printer], log: log), preferences: appPrefs(remembered: "11354"),
+        formFeedClock: AppNoStampClock()
+    )
+    let m = AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: 1), defaults: defaults)
+    #expect(!m.monitor.pollingEnabled)
+    await m.surfaceOpened()
+    #expect(log.statusQueries == 1)
+    #expect(m.monitor.state == .ready(name: "LabelWriter 450"))
+}
+
+/// With automatic polling off the status does not stay "printing" after a print.
+@Test @MainActor func statusAfterPrintWithoutPolling() async {
+    let defaults = tempDefaults()
+    defaults.set(false, forKey: AppSettings.statusPollingKey)
+    let printer = LabelPrinter(
+        factory: AppStubFactory(list: [appLW450Printer]), preferences: appPrefs(remembered: "11354"),
+        formFeedClock: AppNoStampClock()
+    )
+    let m = AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: 1), defaults: defaults)
+    await m.surfaceOpened()
+    m.document.text = "x"
+    await m.print(allowOverflow: false)
+    #expect(m.printPhase == .finished(1))
+    #expect(m.monitor.state == .ready(name: "LabelWriter 450"))
+}
+
+/// The positioning pause and the running print both offer Cancel.
+@Test func cancelIsOfferedWhileWaitingAndPrinting() {
+    #expect(PrintStatusView.offersCancel(for: .positioning(remaining: .seconds(3))))
+    #expect(PrintStatusView.offersCancel(for: .printing(done: 0, total: 2)))
+    #expect(!PrintStatusView.offersCancel(for: .finished(1)))
+    #expect(!PrintStatusView.offersCancel(for: .idle))
+}
+
+/// Cancelling during the positioning pause ends as "cancelled" without opening the device.
+@Test @MainActor func cancelDuringPositioning() async {
+    let now = Date(timeIntervalSinceReferenceDate: 1000)
+    let log = DeviceLog()
+    let sleeper = ManualSleeper()
+    let printer = LabelPrinter(
+        factory: AppStubFactory(list: [appLW450Printer], log: log), preferences: appPrefs(remembered: "11354"),
+        formFeedClock: FixedClock(lastFeed: now.addingTimeInterval(-7)),
+        sleep: { try await sleeper.sleep($0) }, now: { now }
+    )
+    let m = AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: 1), defaults: tempDefaults())
+    await m.refreshPrinters()
+    m.document.text = "x"
+    let job = Task { await m.print(allowOverflow: false) }
+    await waitForAsync { await sleeper.sleepCount == 1 }
+    m.cancelPrint()
+    await job.value
+    #expect(m.printPhase == .cancelled(printed: 0, total: 1))
+    #expect(log.opens == 0)
+}
+
+/// Settings and docs: the JobSpacing pause is not shared between app and command line tool (Ruling A24).
+@Test func spacingHintAndPollingFootnoteInGerman() {
+    let de = localizedBundle(preferred: ["de"])
+    #expect(String(localized: "After printing from the app, wait about 10 seconds before printing with the command line tool (and vice versa).", bundle: de)
+        == "Nach einem Druck aus der App etwa 10 s warten, bevor du mit dem Kommandozeilenwerkzeug druckst (und umgekehrt).")
+    #expect(String(localized: "MacLabel only asks the printer while a window or the menu bar panel is open. With automatic polling off, it asks once when one opens.", bundle: de)
+        == "MacLabel fragt den Drucker nur ab, solange ein Fenster oder das Menüleisten-Panel geöffnet ist. Ist die automatische Abfrage aus, fragt es beim Öffnen einmal nach.")
+}

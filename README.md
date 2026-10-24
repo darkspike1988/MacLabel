@@ -45,6 +45,7 @@ open build/MacLabel.app
 - `scripts/build-app.sh --install` kopiert die App zusätzlich nach `~/Applications` und aktualisiert das Dienste-Menü (`pbs -update`). Das ist nötig für den Dienst „Mit MacLabel drucken“ und für die Kurzbefehle.
 - Die App läuft in der Sandbox und hat nur USB-Zugriff und Lesezugriff auf selbst gewählte Dateien, kein Netzwerk.
 - Das Kommandozeilenwerkzeug steckt in der App (`MacLabel.app/Contents/Helpers/maclabel`). Den Befehl zum Verlinken zeigt *MacLabel › Kommandozeilenwerkzeug installieren…* bzw. die Einstellungen.
+- App und Kommandozeilenwerkzeug teilen sich die Druckpause nicht (die Sandbox trennt ihren Speicher): Nach einem Druck aus der App etwa 10 s warten, bevor du mit dem Kommandozeilenwerkzeug druckst (und umgekehrt).
 - Die Xcode-Projektdatei wird erzeugt und nicht eingecheckt; zum Bearbeiten `xcodegen generate --spec App/project.yml` ausführen und `App/MacLabel.xcodeproj` öffnen.
 
 ## CLI-Beispiele

@@ -157,6 +157,13 @@ public final class AppModel {
         await rollTask?.value
     }
 
+    /// The window or the menu bar panel opened: reads the printers and asks the status once,
+    /// also when automatic polling is off (one rule for both).
+    public func surfaceOpened() async {
+        await refreshPrinters()
+        await monitor.refreshNow()
+    }
+
     /// Uses `roll` and remembers it for the selected printer.
     public func chooseRoll(_ roll: LabelRoll) {
         self.roll = roll
@@ -229,7 +236,8 @@ public final class AppModel {
         if previewResult?.overflowIndices.isEmpty == false {
             confirmsOverflowPrint = true
         } else {
-            Task { await print(allowOverflow: false) }
+            // The preview covers at most the first 50 labels; a later overflow is caught by the print.
+            Task { await print(document: document, allowOverflow: false, asksOnOverflow: true) }
         }
     }
 
@@ -240,9 +248,15 @@ public final class AppModel {
 
     /// Prints `document` (the window's, or the menu bar panel's text) on the selected printer.
     public func print(document: LabelDocument, allowOverflow: Bool) async {
+        await print(document: document, allowOverflow: allowOverflow, asksOnOverflow: false)
+    }
+
+    /// `asksOnOverflow`: an overflow found while printing (beyond the previewed labels) asks
+    /// "Print anyway?" instead of failing.
+    private func print(document: LabelDocument, allowOverflow: Bool, asksOnOverflow: Bool) async {
         guard printTask == nil else { return }
         guard let target = selectedPrinter else {
-            printPhase = .failed(PrinterSelectionError.noPrinter.localizedDescription)
+            printPhase = .failed(L10n.string("No printer connected."))
             return
         }
         guard target.model.family == .lwClassic else {
@@ -291,6 +305,9 @@ public final class AppModel {
         } catch {
             if job.isCancelled {
                 printPhase = .cancelled(printed: printedSoFar, total: total)
+            } else if asksOnOverflow, !allowOverflow, case PrintError.overflow = error {
+                printPhase = .idle
+                confirmsOverflowPrint = true
             } else {
                 printPhase = .failed(error.localizedDescription)
             }

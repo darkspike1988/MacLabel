@@ -2167,23 +2167,6 @@
         }
       }
     },
-    "MacLabel only asks the printer while a window or the menu bar panel is open.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MacLabel only asks the printer while a window or the menu bar panel is open."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MacLabel fragt den Drucker nur ab, solange ein Fenster oder das Menüleisten-Panel geöffnet ist."
-          }
-        }
-      }
-    },
     "Command Line": {
       "extractionState": "manual",
       "localizations": {
@@ -2588,6 +2571,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Der Druck wurde abgebrochen."
+          }
+        }
+      }
+    },
+    "MacLabel only asks the printer while a window or the menu bar panel is open. With automatic polling off, it asks once when one opens.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MacLabel only asks the printer while a window or the menu bar panel is open. With automatic polling off, it asks once when one opens."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MacLabel fragt den Drucker nur ab, solange ein Fenster oder das Menüleisten-Panel geöffnet ist. Ist die automatische Abfrage aus, fragt es beim Öffnen einmal nach."
+          }
+        }
+      }
+    },
+    "After printing from the app, wait about 10 seconds before printing with the command line tool (and vice versa).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After printing from the app, wait about 10 seconds before printing with the command line tool (and vice versa)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach einem Druck aus der App etwa 10 s warten, bevor du mit dem Kommandozeilenwerkzeug druckst (und umgekehrt)."
           }
         }
       }

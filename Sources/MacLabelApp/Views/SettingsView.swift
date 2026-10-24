@@ -27,7 +27,7 @@ public struct SettingsView: View {
                 Toggle(L10n.string("Show in the menu bar"), isOn: $showsMenuBarExtra)
                 Toggle(L10n.string("Poll the printer status automatically"), isOn: $statusPolling)
             } footer: {
-                Text(L10n.string("MacLabel only asks the printer while a window or the menu bar panel is open."))
+                Text(L10n.string("MacLabel only asks the printer while a window or the menu bar panel is open. With automatic polling off, it asks once when one opens."))
             }
 
             cliSection(AppSettings.cliInstall())
@@ -52,13 +52,17 @@ public struct SettingsView: View {
         } header: {
             Text(L10n.string("Command Line"))
         } footer: {
-            switch install {
-            case .homebrew:
-                Text(L10n.string("Run this command in Terminal to use maclabel there. The app and the command line tool remember rolls separately."))
-            case .systemWide:
-                Text(L10n.string("Run this command in Terminal to use maclabel there. It asks for the administrator password. The app and the command line tool remember rolls separately."))
-            case .moveFirst:
-                Text(L10n.string("The app and the command line tool remember rolls separately."))
+            VStack(alignment: .leading, spacing: 4) {
+                switch install {
+                case .homebrew:
+                    Text(L10n.string("Run this command in Terminal to use maclabel there. The app and the command line tool remember rolls separately."))
+                case .systemWide:
+                    Text(L10n.string("Run this command in Terminal to use maclabel there. It asks for the administrator password. The app and the command line tool remember rolls separately."))
+                case .moveFirst:
+                    Text(L10n.string("The app and the command line tool remember rolls separately."))
+                }
+                // Ruling A24: the sandboxed app and the command line tool keep separate form-feed times.
+                Text(L10n.string("After printing from the app, wait about 10 seconds before printing with the command line tool (and vice versa)."))
             }
         }
     }

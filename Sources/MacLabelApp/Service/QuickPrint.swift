@@ -97,6 +97,9 @@ extension LabelPrinter {
             _ = try PrintService.render(first)
         } catch PrintError.overflow {
             throw QuickPrintError.overflow
+        } catch is CancellationError {
+            // `QuickPrintError(_:)` turns it into the plain "Printing was cancelled."
+            throw CancellationError()
         } catch {
             throw QuickPrintError.failed(error.localizedDescription)
         }
@@ -130,6 +133,9 @@ extension LabelPrinter {
                 return try PrinterSelection.select(serial: preferredSerial, from: printers)
             }
             return try PrinterSelection.select(serial: nil, from: printers)
+        } catch PrinterSelectionError.noPrinter {
+            // The app's one wording, as in the print bar.
+            throw QuickPrintError.noPrinter(L10n.string("No printer connected."))
         } catch {
             throw QuickPrintError.noPrinter(error.localizedDescription)
         }

@@ -11,11 +11,22 @@ struct PrintStatusView: View {
         blockReason != nil && !phase.isActive
     }
 
+    /// The positioning pause and the running print both offer Cancel (same action).
+    nonisolated static func offersCancel(for phase: PrintPhase) -> Bool {
+        phase.isActive
+    }
+
     var body: some View {
         let phase = model.printPhase
         if Self.showsBlockReason(phase: phase, blockReason: blockReason), let blockReason {
             Label(blockReason, systemImage: "info.circle")
                 .foregroundStyle(.secondary)
+        } else if Self.offersCancel(for: phase) {
+            HStack(spacing: 12) {
+                status(for: phase)
+                Button(L10n.string("Cancel"), action: model.cancelPrint)
+                    .keyboardShortcut(.cancelAction)
+            }
         } else {
             status(for: phase)
         }
@@ -28,14 +39,10 @@ struct PrintStatusView: View {
             PositioningProgress(remaining: remaining, message: phase.message ?? "")
                 .id(remaining)
         case .printing(let done, let total):
-            HStack(spacing: 12) {
-                ProgressView(value: Double(done), total: Double(max(total, 1))) {
-                    Text(phase.message ?? "")
-                }
-                .frame(maxWidth: 260)
-                Button(L10n.string("Cancel"), action: model.cancelPrint)
-                    .keyboardShortcut(.cancelAction)
+            ProgressView(value: Double(done), total: Double(max(total, 1))) {
+                Text(phase.message ?? "")
             }
+            .frame(maxWidth: 260)
         case .finished:
             Label {
                 Text(phase.message ?? "")

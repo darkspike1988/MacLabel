@@ -263,3 +263,27 @@ final class MemoryFormFeedClock: FormFeedClock, @unchecked Sendable {
     task.cancel()
     #expect(await task.value)
 }
+/// The app's `LabelPrinter` waits for the pause itself (device closed meanwhile); `PrintService` must not wait again.
+@Test func spacingWaitCanBeLeftToTheCaller() async throws {
+    let clock = MemoryFormFeedClock(); clock.recordFormFeed(serial: "A", at: Date())
+    let before = try #require(clock.lastFormFeed(serial: "A"))
+    let t = ScriptedTransport(statuses: [0x03, 0x03])
+    let start = ContinuousClock.now
+    try await PrintService.print(
+        req(1), using: t, spacing: .init(clock: clock, serial: "A", minimumPause: .seconds(30)), waitForSpacing: false
+    )
+    #expect(ContinuousClock.now - start < .seconds(5))
+    // The form feed is still recorded for the next job.
+    #expect(try #require(clock.lastFormFeed(serial: "A")) > before)
+}
+/// Overflow and other content errors are found before any device is involved.
+@Test func renderJobChecksContentWithoutDevice() throws {
+    let r = PrintRequest(contents: [.barcode(.init(symbology: .code128, value: String(repeating: "A", count: 80)))], roll: r11354, model: lw450)
+    #expect(throws: PrintError.overflow(labelIndex: 0)) { try PrintService.renderJob(r) }
+    #expect(try PrintService.renderJob(req(2)).labelCount == 2)
+}
+@Test func statusReasonIsPublicAndLocalized() {
+    #expect(PrintError.reason(LWStatus(raw: 0xA0)) == PrintError.reason(LWStatus(raw: 0xA0), bundle: L10n.bundle))
+    let de = localizedBundle(preferred: ["de"])
+    #expect(PrintError.reason(LWStatus(raw: 0xA0), bundle: de) != "out of paper")
+}

@@ -74,8 +74,7 @@ public struct MainWindow: View {
             }
         }
         .task {
-            await model.refreshPrinters()
-            await model.monitor.refreshNow()
+            await model.surfaceOpened()
         }
     }
 

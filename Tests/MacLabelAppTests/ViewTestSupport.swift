@@ -164,6 +164,8 @@ actor ManualSleeper {
     }
 
     var sleepCount: Int { requests.count }
+    /// Sleeps suspended right now (neither advanced nor cancelled).
+    var pendingCount: Int { waiters.count }
 }
 
 /// Polls (no fixed sleep) until `condition` holds.

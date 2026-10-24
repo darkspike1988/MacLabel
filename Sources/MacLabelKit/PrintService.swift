@@ -81,6 +81,9 @@ extension PrintError: LocalizedError {
         }
     }
 
+    /// Why the printer cannot print, as a short phrase ("out of paper"), in the user's language.
+    public static func reason(_ status: LWStatus) -> String { reason(status, bundle: L10n.bundle) }
+
     static func reason(_ status: LWStatus, bundle: Bundle) -> String {
         if status.isPaperOut { return String(localized: "out of paper", bundle: bundle) }
         if status.isJammed { return String(localized: "paper jam", bundle: bundle) }
@@ -94,6 +97,14 @@ public struct PreparedJob: Sendable {
     public let bytes: [UInt8]
 }
 
+/// A validated, rendered job that can be sent without rendering again.
+public struct RenderedJob: Sendable {
+    let job: LWClassicJob
+    let needsTopOfForm: Bool
+    /// The number of labels in the job.
+    public var labelCount: Int { job.labels.count }
+}
+
 public enum PrintService {
     public static func prepare(_ request: PrintRequest) throws -> PreparedJob {
         let (renders, job) = try build(request)
@@ -104,6 +115,13 @@ public enum PrintService {
     /// between labels when the calling task is cancelled.
     public static func render(_ request: PrintRequest) throws -> [RenderResult] {
         try build(request).0
+    }
+
+    /// Validates and renders `request` without touching a device, so content errors (overflow,
+    /// invalid barcode, …) surface before a printer is opened. Cooperatively cancellable.
+    public static func renderJob(_ request: PrintRequest) throws -> RenderedJob {
+        let (_, job) = try build(request)
+        return RenderedJob(job: job, needsTopOfForm: request.roll.kind == .dieCut)
     }
 
     private static func build(_ request: PrintRequest) throws -> ([RenderResult], LWClassicJob) {
@@ -145,6 +163,9 @@ public enum PrintService {
         return (renders, job)
     }
 
+    /// Renders and prints `request`. With `spacing`, waits for the `JobSpacing` pause first, unless
+    /// `waitForSpacing` is `false` (the caller already waited, e.g. with the device closed), and records
+    /// the form feed afterwards either way.
     public static func print(
         _ request: PrintRequest,
         using transport: any PrinterTransport,
@@ -152,12 +173,30 @@ public enum PrintService {
         pollInterval: Duration = .milliseconds(100),
         settleAfterTopOfForm: Duration = .seconds(1),
         spacing: JobSpacing? = nil,
+        waitForSpacing: Bool = true,
         progress: (@Sendable (Int, Int) -> Void)? = nil
     ) async throws {
-        let (_, job) = try build(request)
+        try await print(
+            try renderJob(request), using: transport, topOfFormTimeout: topOfFormTimeout, pollInterval: pollInterval,
+            settleAfterTopOfForm: settleAfterTopOfForm, spacing: spacing, waitForSpacing: waitForSpacing, progress: progress
+        )
+    }
+
+    /// Prints an already rendered job; see `print(_:using:…)` for `spacing` and `waitForSpacing`.
+    public static func print(
+        _ rendered: RenderedJob,
+        using transport: any PrinterTransport,
+        topOfFormTimeout: Duration = .seconds(10),
+        pollInterval: Duration = .milliseconds(100),
+        settleAfterTopOfForm: Duration = .seconds(1),
+        spacing: JobSpacing? = nil,
+        waitForSpacing: Bool = true,
+        progress: (@Sendable (Int, Int) -> Void)? = nil
+    ) async throws {
+        let job = rendered.job
         let total = job.labels.count
         var headerSent = false
-        if let spacing {
+        if let spacing, waitForSpacing {
             let remaining = spacing.remainingPause()
             if remaining > .zero {
                 debugLog("pause \(remaining) after previous form feed")
@@ -166,7 +205,7 @@ public enum PrintService {
         }
         do {
             try await waitUntilReady(
-                transport, needsTopOfForm: request.roll.kind == .dieCut,
+                transport, needsTopOfForm: rendered.needsTopOfForm,
                 timeout: topOfFormTimeout, pollInterval: pollInterval, settle: settleAfterTopOfForm
             )
 
