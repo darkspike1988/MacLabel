@@ -122,13 +122,21 @@ import Testing
         #expect(Array(data.prefix(4)) == [0x89, 0x50, 0x4E, 0x47])
     }
 
+    /// Non-dry `print` calls may only run when the binary honours the fake printer;
+    /// otherwise a regression could send a job to a real, connected LabelWriter.
+    static func requireFakePrinter() throws {
+        try #require(try run(["printers"]).out.contains("FAKE"), "binary ignores MACLABEL_FAKE_PRINTER; refusing to print")
+    }
+
     @Test func noRollIsUsageError() throws {
+        try Self.requireFakePrinter()
         let r = try Self.run(["print", "Test"])
         #expect(r.status == 64)
         #expect(r.err.contains("11354"))
     }
 
     @Test func dryRunDoesNotRememberRoll() throws {
+        try Self.requireFakePrinter()
         let suite = "maclabel.test.\(UUID().uuidString)"
         let url = Self.tempURL("x.bin")
         defer { try? FileManager.default.removeItem(at: url) }
@@ -137,6 +145,7 @@ import Testing
     }
 
     @Test func ambiguousRollListsCandidates() throws {
+        try Self.requireFakePrinter()
         let r = try Self.run(["print", "Test", "--roll", "label"])
         #expect(r.status == 64)
         let catalog = MediaCatalog.bundled
