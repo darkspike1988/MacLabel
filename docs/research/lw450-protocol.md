@@ -220,3 +220,10 @@ Probe mit IOUSBHost.framework aus einem Swift-Kommandozeilenprogramm, ohne DYMO-
 - Endpoints: **Bulk OUT 0x02**, **Bulk IN 0x82**, jeweils wMaxPacketSize 64. [B]
 - `1B 41` (ESC A) → **1 Byte `0x03`** (Ready + Top of Form), wie im Manual beschrieben. [B]
 - `1B 56` (ESC V) → **10 Byte ASCII `1750111f0J`**. Modellnummer 1750111, Firmware `f0J`. Das Trennzeichen ist hier `f` und nicht `v` wie im Manual-Beispiel. Parser: die ersten 7 Zeichen = Modell, der Rest = Firmware. [B]
+
+## 11. Erster echter Druck (24.10.2026)
+
+`maclabel print "MacLabel Test ↑" --roll 11354` auf dem LW450 (Firmware f0J), Rolle 11354/S0722540, direkt per IOUSBHost, ohne DYMO-Treiber im Pfad:
+- Job ohne Fehler beendet, Status danach `0x03` (bereit).
+- Laut Auftraggeber: Text „MacLabel Test ↑“ korrekt lesbar, Pfeil nach oben, nicht gespiegelt. Die Bitreihenfolge (MSB = Dot 0), die `.upright`-Abbildung und die Etikettenlänge `ESC L 01 77` (375 Zeilen) sind damit bestätigt. [B]
+- Bytestrom identisch zum Header von DYMOs eigenem Filter (Resync, `ESC Q 00 00`, `ESC B 00`, `ESC h`, `ESC e`), danach Raster mit `ESC f`/`ETB`/`SYN`, `ESC E` am Ende.

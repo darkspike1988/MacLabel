@@ -2,7 +2,7 @@
 
 Eine schnelle, native macOS-App für DYMO-LabelWriter-Etikettendrucker – als moderne Alternative zu DYMO Connect.
 
-> **Status:** frühe Entwicklung. Noch nicht für den Alltag gedacht.
+> **Status:** frühe Entwicklung. Kern und CLI drucken bereits erfolgreich auf einem LabelWriter 450; die App folgt.
 
 **Ziel:** In unter 10 Sekunden das passende Etikett drucken – ohne Einstellungen zu suchen.
 
@@ -13,7 +13,7 @@ Eine schnelle, native macOS-App für DYMO-LabelWriter-Etikettendrucker – als m
 
 ## Status
 
-Kern (`LabelKit`) und CLI sind fertig. Der Testdruck am Gerät steht noch aus (siehe [`docs/first-print-checklist.md`](docs/first-print-checklist.md)). Die App folgt.
+Kern (`MacLabelKit`) und CLI sind fertig. Der erste Testdruck auf einem LabelWriter 450 (Rolle 11354) war erfolgreich; weitere Prüfschritte stehen in [`docs/first-print-checklist.md`](docs/first-print-checklist.md). Die App folgt.
 
 ## Datenschutz
 
