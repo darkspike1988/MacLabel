@@ -162,3 +162,28 @@ final class Counter: @unchecked Sendable {
     #expect(job.renders[0].bitmap.height > 0)
     #expect(!contains(try PrintService.prepare(req(1)).bytes, [0x1B, 0x4C, 0xFF, 0xFF]))
 }
+
+// Hardware finding (LW450, 24.10.2026): after a job's final ESC E the printer reports 0x01
+// (ready, not top-of-form) for ~1.3 s while the label is still moving. Starting the next job
+// in that window shifts it down the label. DYMO's language monitor (CheckStatusAndReprint)
+// polls ESC A until the TOF bit is set before the first label; MacLabel must do the same.
+@Test func waitsForTopOfFormBeforeFirstLabel() async throws {
+    let t = ScriptedTransport(statuses: [0x01, 0x01, 0x03, 0x03])
+    try await PrintService.print(req(1), using: t, topOfFormTimeout: .seconds(1), pollInterval: .zero)
+    #expect(await t.written.prefix(156) == ArraySlice(LWClassicEncoder.resync))
+    #expect(await t.written.suffix(2) == [0x1B, 0x45])
+}
+@Test func topOfFormTimeoutIsNotReady() async {
+    let t = ScriptedTransport(statuses: Array(repeating: 0x01, count: 500))
+    await #expect(throws: PrintError.printerNotReady(LWStatus(raw: 0x01))) {
+        try await PrintService.print(req(1), using: t, topOfFormTimeout: .milliseconds(30), pollInterval: .milliseconds(5))
+    }
+    #expect(await t.written.isEmpty)
+}
+@Test func continuousRollDoesNotWaitForTopOfForm() async throws {
+    let cont = MediaCatalog.bundled.roll(sku: "30270")!
+    let t = ScriptedTransport(statuses: [0x01, 0x01])
+    try await PrintService.print(.init(contents: [text("x")], roll: cont, model: lw450, continuousLengthMM: 50),
+                                 using: t, topOfFormTimeout: .milliseconds(30), pollInterval: .zero)
+    #expect(await t.written.suffix(2) == [0x1B, 0x45])
+}

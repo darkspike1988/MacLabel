@@ -235,3 +235,22 @@ Signiertes Test-App-Bundle (ad-hoc) mit `com.apple.security.app-sandbox` + `com.
 - Die User-Client-Klasse von IOUSBHost.framework heißt `AppleUSBHostFrameworkInterfaceClient` (in ioreg als Kind des Interfaces sichtbar, solange es geöffnet ist). [B]
 - Mit zusätzlich `com.apple.security.temporary-exception.iokit-user-client-class = [AppleUSBHostFrameworkInterfaceClient]` funktionieren Öffnen, `ESC A` → `0x03` und `ESC V` → `1750111f0J` in der Sandbox. [B]
 - Folge: Die Sandbox-App ist möglich. Temporary-Exception-Entitlements sind für Developer-ID/Homebrew zulässig, im Mac App Store aber kritisch. [I]
+
+## 13. Etiketten zu tief bei schnell aufeinanderfolgenden Aufträgen (24.10.2026)
+
+**Symptom:** QR- und Barcode-Etiketten landeten 1–5 mm zu tief, teils unten abgeschnitten. Nach einer Pause war der erste Druck korrekt. Das zweite Etikett innerhalb eines Auftrags (`ESC G`) war immer korrekt. Text-Etiketten fielen nicht auf, weil der Text in der Mitte sitzt.
+
+**Widerlegt am Gerät:**
+1. `ETB`-Kompression bzw. `ESC f` im 600-lpi-Modus: Ein unkomprimierter Auftrag war bei schneller Folge ebenfalls verschoben.
+2. `ESC L` um 25 % verlängert: keine Änderung.
+3. Vor `ESC E` auf `ESC h` umschalten: keine Änderung.
+
+**Belege:**
+- Statusmessung: Nach dem Senden eines Auftrags meldet der LW450 etwa 1,3 s lang `0x01` (bereit, *nicht* Top-of-Form), danach `0x03`. [B]
+- REA, `raster2dymolw`: `CLabelWriterLanguageMonitor::StartDoc` setzt ein Flag. `StartPage` ruft beim ersten Etikett `CheckStatusAndReprint` auf, das `ESC A` im 100-ms-Takt abfragt, bis `(status & 0x0A) != 0`, also bis Top-of-Form oder Rollenwechsel gemeldet wird. Erst dann folgt das Raster. [B]
+- REA, `UsbPrinterClassDriver`: `_Write` reicht nur durch, `_StripEOJs` entfernt `0x04`, `_SoftReset` (USB-Klassen-Request `0x21/0x02`) steht nur in der Funktionstabelle. Keine Positionslogik. [B]
+- Apples CUPS-`usb`-Backend kennt `waiteof`/„cups-waiting-for-job-completed“. [B, Strings]
+
+**Ursache [I, konsistent mit allen Beobachtungen]:** MacLabel startete den nächsten Auftrag, sobald der Status „bereit“ (`0x01`) lautete, während das vorherige Etikett noch zur Abreißkante lief. DYMO wartet auf Top-of-Form.
+
+**Korrektur:** `PrintService.print` wartet bei Stanzetiketten vor dem Auftragskopf, bis das Top-of-Form-Bit gesetzt ist (Abfrage alle 100 ms, höchstens 10 s, sonst `printerNotReady`). Endlosrollen warten nicht. Am Gerät noch nicht durch einen Druck verifiziert, weil der Auftraggeber keine weiteren Testdrucke wünscht.

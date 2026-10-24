@@ -141,14 +141,18 @@ public enum PrintService {
     public static func print(
         _ request: PrintRequest,
         using transport: any PrinterTransport,
+        topOfFormTimeout: Duration = .seconds(10),
+        pollInterval: Duration = .milliseconds(100),
         progress: (@Sendable (Int, Int) -> Void)? = nil
     ) async throws {
         let (_, job) = try build(request)
         let total = job.labels.count
         var headerSent = false
         do {
-            let before = try await transport.status()
-            guard before.canPrint else { throw PrintError.printerNotReady(before) }
+            try await waitUntilReady(
+                transport, needsTopOfForm: request.roll.kind == .dieCut,
+                timeout: topOfFormTimeout, pollInterval: pollInterval
+            )
 
             try await transport.write(LWClassicEncoder.jobHeader(job))
             headerSent = true
@@ -171,6 +175,25 @@ public enum PrintService {
             }
             if let error = error as? TransportError { throw PrintError.transport(error) }
             throw error
+        }
+    }
+
+    /// Waits until the printer may take a new job. For die-cut labels that means the
+    /// top-of-form bit is set: right after the previous job's form feed the LW450 reports
+    /// 0x01 (ready, not at top of form) for about a second, and printing then would land
+    /// too low on the label. DYMO's own language monitor waits the same way.
+    static func waitUntilReady(
+        _ transport: any PrinterTransport, needsTopOfForm: Bool,
+        timeout: Duration, pollInterval: Duration
+    ) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now + timeout
+        while true {
+            let status = try await transport.status()
+            guard status.canPrint else { throw PrintError.printerNotReady(status) }
+            if !needsTopOfForm || status.isTopOfForm { return }
+            guard clock.now < deadline else { throw PrintError.printerNotReady(status) }
+            try await Task.sleep(for: pollInterval)
         }
     }
 }
