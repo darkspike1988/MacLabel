@@ -289,6 +289,21 @@ import MacLabelKit
         try saveIfRequested(image, name: "more-inspector-light")
     }
 
+    @Test @MainActor func addressEditorShowsContactButton() async throws {
+        let model = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await model.refreshPrinters()
+        model.document.layout = .address
+        model.document.addressText = "Max Mustermann\nMusterstraße 1\n12345 Musterstadt"
+        let window = makeWindow(EditorForm().environment(model), size: CGSize(width: 440, height: 360), appearance: .aqua)
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(300))
+        let button = try #require(window.contentView.flatMap { findButton(titled: L10n.string("Choose Contact …"), in: $0) })
+        #expect(!button.isHidden)
+        let image = try snapshot(of: try #require(window.contentView?.superview))
+        #expect(distinctColors(image) > 1)
+        try saveIfRequested(image, name: "address-light")
+    }
+
     // MARK: Helpers
 
     @MainActor
@@ -377,4 +392,11 @@ private func saveIfRequested(_ rep: NSBitmapImageRep, name: String) throws {
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     let data = try #require(rep.representation(using: .png, properties: [:]))
     try data.write(to: dir.appending(path: "\(name).png"))
+}
+
+@MainActor
+private func findButton(titled prefix: String, in view: NSView) -> NSButton? {
+    if let button = view as? NSButton, button.title.hasPrefix(prefix) { return button }
+    for sub in view.subviews { if let found = findButton(titled: prefix, in: sub) { return found } }
+    return nil
 }

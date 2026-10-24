@@ -1,4 +1,3 @@
-import MacLabelKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -27,11 +26,11 @@ struct CSVSection: View {
             Text(L10n.string("Each row becomes a label. Use {column} placeholders, or drop a CSV file here."))
         }
         .fileImporter(isPresented: $choosingFile, allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .plainText]) { result in
-            if case .success(let url) = result { load(url) }
+            if case .success(let url) = result { Task { _ = await load([url]) } }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first else { return false }
-            load(url)
+            guard urls.contains(where: { ImportHelpers.kind(of: $0) == .csv }) else { return false }
+            Task { _ = await load(urls) }
             return true
         }
     }
@@ -43,21 +42,14 @@ struct CSVSection: View {
         loadError = nil
     }
 
-    /// Reads the file in UTF-8 (falling back to Windows-1252, as Excel writes it) and parses it.
-    private func load(_ url: URL) {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+    private func load(_ urls: [URL]) async -> Bool {
         do {
-            let data = try Data(contentsOf: url)
-            guard let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .windowsCP1252) else {
-                throw CocoaError(.fileReadInapplicableStringEncoding)
-            }
-            let table = try CSVTable(parsing: text)
-            guard !table.rows.isEmpty else { throw DocumentError.emptyCSV }
-            model.document.csv = table
-            loadError = nil
+            let handled = try await ImportHelpers.importFiles(urls, into: model)
+            if handled { loadError = nil }
+            return handled
         } catch {
             loadError = error.localizedDescription
+            return false
         }
     }
 }

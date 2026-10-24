@@ -1,3 +1,4 @@
+import Contacts
 import SwiftUI
 
 /// Address layout: one multi-line field, always left-aligned on the label.
@@ -14,6 +15,14 @@ struct AddressFields: View {
             .labelsHidden()
             .lineLimit(4...8)
             .multilineTextAlignment(.leading)
+            ContactPickerButton(title: L10n.string("Choose Contact …"), onPick: fill)
         }
+    }
+
+    private func fill(_ contact: CNContact) {
+        let name = CNContactFormatter.string(from: contact, style: .fullName) ?? ""
+        model.document.addressText = ContactFormatter.addressText(
+            name: name, organization: contact.organizationName, postal: contact.postalAddresses.first?.value
+        )
     }
 }

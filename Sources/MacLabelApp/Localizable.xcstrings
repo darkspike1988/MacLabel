@@ -586,19 +586,19 @@
         }
       }
     },
-    "Dithering turns grey tones into dot patterns. Turn it off for logos and line art.": {
+    "Dithering turns grey tones into dot patterns. Turn it off for logos and line art. You can also drop a picture on the window.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dithering turns grey tones into dot patterns. Turn it off for logos and line art."
+            "value": "Dithering turns grey tones into dot patterns. Turn it off for logos and line art. You can also drop a picture on the window."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rastern wandelt Grautöne in Punktmuster. Für Logos und Strichgrafiken ausschalten."
+            "value": "Beim Rastern werden Grautöne zu Punktmustern. Für Logos und Strichzeichnungen ausschalten. Du kannst ein Bild auch auf das Fenster ziehen."
           }
         }
       }
@@ -1976,6 +1976,91 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@, %@"
+          }
+        }
+      }
+    },
+    "Choose Contact …": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Contact …"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontakt wählen …"
+          }
+        }
+      }
+    },
+    "Choose Picture …": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Picture …"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild wählen …"
+          }
+        }
+      }
+    },
+    "The file could not be opened.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file could not be opened."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei konnte nicht geöffnet werden."
+          }
+        }
+      }
+    },
+    "This file is not a picture the app can read.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is not a picture the app can read."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Datei ist kein Bild, das die App lesen kann."
+          }
+        }
+      }
+    },
+    "OK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }
