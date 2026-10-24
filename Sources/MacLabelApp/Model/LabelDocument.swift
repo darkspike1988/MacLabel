@@ -91,25 +91,90 @@ public struct LabelDocument: Sendable, Equatable {
         case .barcode:
             return .barcode(BarcodeContent(symbology: symbology, value: barcodeValue, showText: showBarcodeText))
         case .qr:
-            let payload = QRPayload.make(
-                kind: qrKind, text: qrText, ssid: wifiSSID, password: wifiPassword, security: wifiSecurity,
-                name: contactName, phone: contactPhone, email: contactEmail
-            )
-            return .qr(QRContent(payload: payload, caption: qrCaption.isEmpty ? nil : qrCaption))
+            return .qr(qrContent(
+                text: qrText, ssid: wifiSSID, password: wifiPassword,
+                name: contactName, phone: contactPhone, email: contactEmail, caption: qrCaption
+            ))
         case .image:
             guard let image else { throw DocumentError.missingImage }
             return .image(ImageContent(image: image, dither: ditherImage))
         }
     }
 
+    private func qrContent(text: String, ssid: String, password: String, name: String, phone: String, email: String, caption: String) -> QRContent {
+        let payload = QRPayload.make(
+            kind: qrKind, text: text, ssid: ssid, password: password, security: wifiSecurity,
+            name: name, phone: phone, email: email
+        )
+        return QRContent(payload: payload, caption: caption.isEmpty ? nil : caption)
+    }
+
+    private func validate() throws {
+        guard copies >= 1 else { throw BatchError.invalidCopies }
+        if let csv, csv.rows.isEmpty { throw DocumentError.emptyCSV }
+    }
+
+    /// Expands the series in the order of `LabelBatch.expand` (rows, then copies), stopping at `limit`.
     public func contents(limit: Int? = nil) throws -> [LabelContent] {
-        let all = try LabelBatch.expand(template(), copies: copies, counter: counter, table: csv)
-        guard let limit else { return all }
-        return Array(all.prefix(limit))
+        try validate()
+        if let limit, limit <= 0 { return [] }
+        let base = try template()
+        let total = try labelCount()
+        let count = min(total, limit ?? total)
+
+        let rows = csv.map { Array($0.rows.prefix((count + copies - 1) / copies)) }
+        var result: [LabelContent] = []
+        result.reserveCapacity(count)
+        var index = 0
+        for rowIndex in 0..<(rows?.count ?? 1) {
+            var lowered: [String: String]?
+            if let rows, let csv {
+                var l: [String: String] = [:]
+                for header in csv.headers { l[header.lowercased()] = rows[rowIndex][header] }
+                lowered = l
+            }
+            for _ in 0..<copies {
+                guard index < count else { return result }
+                let counterText = counter?.formatted(index: index)
+                if layout == .qr {
+                    func sub(_ s: String) throws -> String {
+                        try LabelBatch.substitute(s, row: lowered, counter: counterText, strict: false)
+                    }
+                    result.append(.qr(qrContent(
+                        text: try sub(qrText), ssid: try sub(wifiSSID), password: try sub(wifiPassword),
+                        name: try sub(contactName), phone: try sub(contactPhone), email: try sub(contactEmail),
+                        caption: try sub(qrCaption)
+                    )))
+                } else {
+                    result.append(try Self.substitute(base, counter: counterText, row: lowered))
+                }
+                index += 1
+            }
+        }
+        return result
+    }
+
+    private static func substitute(_ content: LabelContent, counter: String?, row: [String: String]?) throws -> LabelContent {
+        func sub(_ s: String) throws -> String { try LabelBatch.substitute(s, row: row, counter: counter, strict: true) }
+        switch content {
+        case .text(var t):
+            t.text = try sub(t.text)
+            return .text(t)
+        case .barcode(var b):
+            b.value = try sub(b.value)
+            return .barcode(b)
+        case .qr(var q):
+            q.payload = try sub(q.payload)
+            if let c = q.caption { q.caption = try sub(c) }
+            return .qr(q)
+        case .image:
+            return content
+        }
     }
 
     public func labelCount() throws -> Int {
-        (csv?.rows.count ?? 1) * copies
+        try validate()
+        return (csv?.rows.count ?? 1) * copies
     }
 
     public func placeholderNames() -> [String] {
