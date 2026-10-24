@@ -65,9 +65,12 @@ func exitFailure(_ error: any Error) -> ExitCode {
     return fail(message(for: error), code: exitCode(for: error))
 }
 
+/// USB printers, or in debug builds the fake printer named by `MACLABEL_FAKE_PRINTER` (tests).
+let printerFactory: any TransportFactory = TransportFactories.makeDefault()
+
 /// The printer named by `serial`, or else the first LW-Classic printer.
 /// Throws `ExitCode` (69) with a message when none is usable.
-func selectPrinter(serial: String?, printers: [DiscoveredPrinter] = USBPrinterDiscovery.printers()) throws -> DiscoveredPrinter {
+func selectPrinter(serial: String?, printers: [DiscoveredPrinter] = printerFactory.printers()) throws -> DiscoveredPrinter {
     do {
         return try PrinterSelection.select(serial: serial, from: printers)
     } catch let error as PrinterSelectionError {

@@ -59,6 +59,13 @@ else
     fail "Contents/Helpers/maclabel missing"
 fi
 
+# Ruling A25: the debug-only fake printer (MACLABEL_FAKE_PRINTER) must not be in the release bundle.
+if hits=$(grep -rlaE "MACLABEL_FAKE_PRINTER|FakeTransportFactory" "$APP" 2>/dev/null); then
+    fail "release bundle contains the debug fake printer: $hits"
+else
+    pass "no fake printer (MACLABEL_FAKE_PRINTER / FakeTransportFactory) in app or CLI"
+fi
+
 # 3. Service entry.
 if plutil -extract NSServices xml1 -o - "$APP/Contents/Info.plist" >/dev/null 2>&1; then pass "Info.plist has NSServices"
 else fail "Info.plist lacks NSServices"; fi

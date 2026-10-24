@@ -16,7 +16,7 @@ struct StatusCommand: AsyncParsableCommand {
         let status: LWStatus
         let version: LWVersion?
         do {
-            let connection = try USBPrinterConnection(printer: found)
+            let connection = try printerFactory.open(found)
             do {
                 status = try await connection.status()
                 version = try await connection.version()

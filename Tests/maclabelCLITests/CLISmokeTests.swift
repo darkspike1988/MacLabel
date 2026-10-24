@@ -23,12 +23,19 @@ import Testing
             .appendingPathComponent(".build/debug/maclabel")
     }
 
-    static func run(_ args: [String], suite: String = "maclabel.test.\(UUID().uuidString)") throws -> Result {
+    /// Runs the CLI against the debug-only fake printer (`MACLABEL_FAKE_PRINTER`, Ruling A25): it
+    /// discovers one "LabelWriter 450" (serial FAKE) and writes print data to `fakePrinter`, never
+    /// to a USB device; tests do not depend on connected hardware.
+    static func run(
+        _ args: [String], suite: String = "maclabel.test.\(UUID().uuidString)",
+        fakePrinter: URL = tempURL("fake-printer.bin")
+    ) throws -> Result {
         let process = Process()
         process.executableURL = binaryURL
         process.arguments = args
         var env = ProcessInfo.processInfo.environment
         env["MACLABEL_DEFAULTS_SUITE"] = suite
+        env["MACLABEL_FAKE_PRINTER"] = fakePrinter.path
         process.environment = env
         let outPipe = Pipe(), errPipe = Pipe()
         process.standardOutput = outPipe
@@ -163,11 +170,36 @@ import Testing
             try RollResolver.resolve(query: nil, catalog: .bundled, preferences: prefs, serial: "OTHER")
         }
 
-        // End to end through the binary (dry run without printer uses the "default" key).
+        // End to end through the binary: the (fake) printer's remembered roll is used.
+        prefs.setLastRollID("11354", forPrinterSerial: "FAKE")
         let url = Self.tempURL("x.bin")
         defer { try? FileManager.default.removeItem(at: url) }
         let r = try Self.run(["print", "T", "--dry-run", url.path], suite: suite)
-        if USBPrinterDiscovery.printers().isEmpty { #expect(r.status == 0, "\(r.err)") }
+        #expect(r.status == 0, "\(r.err)")
+    }
+
+    /// `printers` and `status` see the fake printer, so these paths run without hardware.
+    @Test func fakePrinterIsDiscovered() throws {
+        let printers = try Self.run(["printers"])
+        #expect(printers.status == 0, "\(printers.err)")
+        #expect(printers.out.contains("LabelWriter 450") && printers.out.contains("FAKE"))
+        let status = try Self.run(["status"])
+        #expect(status.status == 0, "\(status.err)")
+        #expect(status.out.contains("LabelWriter 450"))
+    }
+
+    /// A real (non-dry) print goes to the fake printer's file. Only runs when the binary is a debug
+    /// build that honours `MACLABEL_FAKE_PRINTER`; otherwise it stops before printing.
+    @Test func printGoesToFakePrinterFile() throws {
+        let fake = Self.tempURL("fake.bin")
+        defer { try? FileManager.default.removeItem(at: fake) }
+        let probe = try Self.run(["printers"], fakePrinter: fake)
+        try #require(probe.out.contains("FAKE"), "binary ignores MACLABEL_FAKE_PRINTER; refusing to print")
+        let r = try Self.run(["print", "Fake", "--roll", "11354"], fakePrinter: fake)
+        #expect(r.status == 0, "\(r.err)")
+        let bytes = [UInt8](try Data(contentsOf: fake))
+        #expect(bytes.count > 156)
+        #expect(bytes.suffix(2) == [0x1B, 0x45])
     }
 
     @Test func overflowWithoutForceExits65() throws {
