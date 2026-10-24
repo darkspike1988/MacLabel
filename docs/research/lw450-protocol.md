@@ -264,3 +264,11 @@ Signiertes Test-App-Bundle (ad-hoc) mit `com.apple.security.app-sandbox` + `com.
 - GET_PORT_STATUS (0xA1/1): `0x18` (not error + select, Papier vorhanden).
 - `ESC A` → `03`, `ESC V` → `1750111f0J`.
 - Firmware-Auslesen: Dafür gibt es keinen Befehl, und auf dem Mac liegt keine LW450-Firmware (DYMO Connect bietet Firmware-Updates nur für LW5xx/LM640).
+
+### 13.1 Simulator-Analyse und Korrektur (24.10.2026)
+
+- Der LW450-Simulator (`Sources/LabelSimulator`, `docs/simulator.md`) spielt alle echten Aufträge des Tages nach. Am besten erklärt die Beobachtungen die Hypothese **„automatischer Rückzug nach längerer Pause; kommt ein Auftrag früher, macht der Drucker den Rückzug nach `ESC E` in Zeilen des aktuellen Modus, im 600-lpi-Modus also nur die halbe Strecke“**. Mit 10 mm Abstand von der Druckzeile zur Abreißkante erklärt sie 14 von 20 Beobachtungen (Foto-RMS 0,98 mm), etwa EAN +4,8 mm gemessen gegenüber +5 mm vorhergesagt.
+- Unerklärt bleibt ein kleinerer Versatz (+0,8 bis +2 mm) auch nach Pausen.
+- **Korrektur im Encoder:** Jeder Auftrag beginnt im Textmodus (`ESC h`). Ein Grafik-Etikett druckt seine erste Zeile (Rasterzeilen 0+1) bei 300 lpi, schaltet dann auf `ESC i` und sendet erst danach `ESC L`. Vor dem abschließenden `ESC E` wird wieder auf `ESC h` geschaltet.
+- Im Simulator bleibt der Inhalt damit unter allen Spitzen-Hypothesen (exact, current-mode, mode-at-ff, auto-retract-Varianten; Abreißkante 8–14 mm) auf ±0,1 mm (Test `EncoderPositioningTests`).
+- **Am echten Gerät noch nicht bestätigt.**
