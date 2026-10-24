@@ -227,3 +227,11 @@ Probe mit IOUSBHost.framework aus einem Swift-Kommandozeilenprogramm, ohne DYMO-
 - Job ohne Fehler beendet, Status danach `0x03` (bereit).
 - Laut Auftraggeber: Text „MacLabel Test ↑“ korrekt lesbar, Pfeil nach oben, nicht gespiegelt. Die Bitreihenfolge (MSB = Dot 0), die `.upright`-Abbildung und die Etikettenlänge `ESC L 01 77` (375 Zeilen) sind damit bestätigt. [B]
 - Bytestrom identisch zum Header von DYMOs eigenem Filter (Resync, `ESC Q 00 00`, `ESC B 00`, `ESC h`, `ESC e`), danach Raster mit `ESC f`/`ETB`/`SYN`, `ESC E` am Ende.
+
+## 12. USB-Zugriff aus der App-Sandbox (24.10.2026)
+
+Signiertes Test-App-Bundle (ad-hoc) mit `com.apple.security.app-sandbox` + `com.apple.security.device.usb`:
+- Allein mit diesen beiden Entitlements scheitert `IOUSBHostInterface(__ioService:)` mit `IOServiceOpen failed` (0xE00002C9). [B]
+- Die User-Client-Klasse von IOUSBHost.framework heißt `AppleUSBHostFrameworkInterfaceClient` (in ioreg als Kind des Interfaces sichtbar, solange es geöffnet ist). [B]
+- Mit zusätzlich `com.apple.security.temporary-exception.iokit-user-client-class = [AppleUSBHostFrameworkInterfaceClient]` funktionieren Öffnen, `ESC A` → `0x03` und `ESC V` → `1750111f0J` in der Sandbox. [B]
+- Folge: Die Sandbox-App ist möglich. Temporary-Exception-Entitlements sind für Developer-ID/Homebrew zulässig, im Mac App Store aber kritisch. [I]

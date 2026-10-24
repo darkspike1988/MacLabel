@@ -58,6 +58,7 @@ Eine einheitliche, native macOS-App, mit der man **in unter 10 Sekunden ohne Ein
   - `com.apple.security.app-sandbox`
   - `com.apple.security.device.usb`
   - `com.apple.security.files.user-selected.read-only` (CSV, Bilder)
+  - `com.apple.security.temporary-exception.iokit-user-client-class` = `[AppleUSBHostFrameworkInterfaceClient]`. Am echten LW450 verifiziert: ohne diese Ausnahme scheitert IOUSBHost in der Sandbox (siehe `docs/research/lw450-protocol.md` §12).
   - keine Netzwerk-Entitlements
 - Das CLI ist nicht sandboxed und hat keinen Netzwerkcode.
 - `Info.plist`: `NSContactsUsageDescription` (de/en, nur für den Fall, dass der Picker Zugriff braucht), `NSServices`-Eintrag für den Dienst.
@@ -106,6 +107,27 @@ Eine einheitliche, native macOS-App, mit der man **in unter 10 Sekunden ohne Ein
 - Natives macOS 26: `NavigationSplitView` ist nicht nötig. Das Fenster besteht aus einem `HSplitView`-artigen Layout: Inhaltseditor links (Formular), Vorschau rechts groß. Darüber eine Toolbar mit Rollen-Chip und Status, darunter die Druckleiste. „Mehr“ öffnet den `.inspector`.
 - Die Vorschau zeigt das Etikett in Lesehaltung auf hellem „Papier“ mit Eckenradius der Rolle und einem dezenten Schatten, dazu einen Vorschubpfeil am Rand. Im Dunkelmodus bleibt das Etikett weiß, weil es Papier darstellt.
 - Systemfarben, SF Symbols, keine eigenen Skins. Mindestfenstergröße 720 × 460.
+
+### 6.5 Entscheidungen nach dem Builder-Check (Claude, delegiert)
+1. **Sandbox bleibt.** Sie ist per Spike am echten Gerät verifiziert (§5). Plan B, falls sie in einer späteren macOS-Version bricht: Die App druckt über das eingebettete, nicht sandboxed CLI als Hilfsprozess. Das ist in Phase 2 nicht gebaut, nur notiert.
+2. **Testbarkeit ohne Hardware:**
+   - Nur in DEBUG-Builds ersetzt die Umgebungsvariable `MACLABEL_FAKE_PRINTER=<Dateipfad>` den USB-Transport durch `FileTransport` und meldet einen simulierten LabelWriter 450.
+   - Release-Builds enthalten diesen Haken nicht (`#if DEBUG`).
+   - Der echte Drucker bekommt in der Entwicklung nur Status- und Versionsabfragen. Echte Drucke aus der App nur nach Freigabe durch den Auftraggeber.
+3. **Gemerkte Rolle:** App (Sandbox-Container) und CLI (`~/Library/Preferences`) haben getrennte Speicher. Akzeptiert: Der Menüpunkt zum CLI-Install weist darauf hin. Keine App Group, weil die ad-hoc signiert unzuverlässig ist.
+4. **Druck ohne Fenster:** Ein UI-unabhängiger `LabelPrinter`-Dienst (actor) bündelt Druckerwahl, Rolle, Rendern und Drucken. `AppModel`, Menüleiste und Intents nutzen ihn.
+   - Intent „Etikett drucken“ läuft ohne App-Fenster (`openAppWhenRun = false`). Bei fehlender Rolle, Überlänge, belegtem oder nicht bereitem Drucker bricht er mit Klartextfehler ab. Er fragt nicht nach.
+   - Menüleiste: Überlänge blockiert den Druck und zeigt „Text zu lang – im Fenster öffnen“ (öffnet das Hauptfenster mit dem Text).
+5. **Abbrechen:** Nach dem Abbrechen zeigt die UI: „Abgebrochen nach N von M Etiketten. Ggf. Vorschubtaste drücken, um ein angefangenes Etikett auszugeben.“
+6. **CLI im Bundle:**
+   - Das Xcode-Target `maclabel-cli` kompiliert `Sources/maclabel` erneut. Die Ressourcen (`media.json`, Strings) lädt das CLI nicht über `Bundle.module`, sondern über einen eigenen Lookup in `LabelMedia`/`MacLabelKit`.
+   - Reihenfolge des Lookups: 1. `Bundle.module`, falls vorhanden. 2. `<echter Pfad des Executables, Symlinks aufgelöst>/../Resources/<Bundle-Name>.bundle`. 3. Dasselbe neben dem Executable.
+   - Muss im Plan per Test verifiziert werden: `maclabel rolls search 32x57` über einen Symlink auf `MacLabel.app/Contents/MacOS/maclabel`.
+   - Das CLI wird separat und ohne Sandbox-Entitlements signiert (innen nach außen).
+7. **CSV und Bilder** werden nicht über Neustarts gemerkt (keine Security-Scoped Bookmarks).
+8. **Lokalisierung:** `MacLabelApp` bekommt einen eigenen String Catalog und nutzt denselben Sprachwahl-Mechanismus wie `MacLabelKit` (`localizedBundle(preferred:)`).
+9. **Dienst und Intents** sind nur manuell prüfbar (App muss unter `/Applications` liegen). Das Build-Skript bietet `--install` an, um nach `~/Applications` zu kopieren und `pbs -update` aufzurufen.
+10. **`Package.swift`** bekommt das Produkt `MacLabelApp`. Die erste Xcode-Auflösung von ArgumentParser darf das Netz nutzen (Build-Zeit, nicht Laufzeit).
 
 ## 7. Dem Umsetzer überlassen
 - Konkrete View-Hierarchie, Animationen, SF-Symbol-Wahl, Formulierungen innerhalb der genannten Bedeutung.
