@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "No roll selected.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No roll selected."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Rolle gewählt."
+          }
+        }
+      }
+    },
     "Choose a picture first.": {
       "extractionState": "manual",
       "localizations": {
