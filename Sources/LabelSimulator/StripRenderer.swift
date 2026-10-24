@@ -4,7 +4,8 @@ import ImageIO
 import UniformTypeIdentifiers
 
 /// Renders the physical label strip: grey backing paper, white rounded labels, the sense holes
-/// (schematic, dark outline at the left edge) and every printed dot, at 600 px per inch in both
+/// (schematic, dark outline at the left edge) and every printed dot (black on label stock,
+/// faint grey where it fell on the backing paper and would not be visible), at 600 px per inch in both
 /// directions so 600-lpi lines are 1 px and 300-lpi lines 2 px tall (true aspect ratio).
 public enum StripRenderer {
     public static let pixelsPerMM = 600 / 25.4
@@ -14,6 +15,7 @@ public enum StripRenderer {
     static let label: UInt8 = 255
     static let hole: UInt8 = 90
     static let ink: UInt8 = 0
+    static let lostInk: UInt8 = 150
     static let jobTick: UInt8 = 60
 
     public static func render(_ result: SimulationResult) -> CGImage {
@@ -56,6 +58,18 @@ public enum StripRenderer {
             fill(hx0, hy0, hx0 + 2, hy1, hole); fill(hx1 - 2, hy0, hx1, hy1, hole)
         }
 
+        // Thermal ink only marks label stock: dots on the backing are drawn as faint "lost" ink.
+        func inkFill(_ x0: Int, _ y0: Int, _ x1: Int, _ y1: Int) {
+            let xa = max(0, x0), xb = min(width, x1), ya = max(0, y0), yb = min(height, y1)
+            guard xa < xb, ya < yb else { return }
+            for y in ya..<yb {
+                for x in xa..<xb {
+                    let i = y * width + x
+                    if buffer[i] == label { buffer[i] = ink } else if buffer[i] != ink { buffer[i] = lostInk }
+                }
+            }
+        }
+
         // Ink: head centred on the label.
         let headOffsetMM = (m.labelWidthMM - Double(m.headDots) * MechanicalModel.step300MM) / 2
         for row in result.rows {
@@ -64,7 +78,7 @@ public enum StripRenderer {
                 for bit in 0..<8 where byte & (0x80 >> UInt8(bit)) != 0 {
                     let dot = row.firstDot + i * 8 + bit
                     let xa = headOffsetMM + Double(dot) * MechanicalModel.step300MM
-                    fill(px(xa), y0, px(xa + MechanicalModel.step300MM), y1, ink)
+                    inkFill(px(xa), y0, px(xa + MechanicalModel.step300MM), y1)
                 }
             }
         }

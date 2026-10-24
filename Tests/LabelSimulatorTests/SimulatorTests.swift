@@ -215,4 +215,19 @@ private let step600 = 25.4 / 600
         }
         #expect(try blackRows(0x68) == 2 * (try blackRows(0x69)))
     }
+
+    @Test func inkOnBackingIsDrawnAsLostInk() throws {
+        // A full black line 33 mm below top of form lies in the gap (label is 31.75 mm).
+        let job: [UInt8] = [0x1B, 0x68, 0x1B, 0x4C, 0x01, 0x77, 0x1B, 0x44, 0x54, 0x1B, 0x66, 0x01, 0xFF, 0x1B, 0x66, 0x01, 135,
+                            0x16] + [UInt8](repeating: 0xFF, count: 84) + [0x1B, 0x45]
+        let sim = LW450Simulator()
+        try sim.run(job)
+        #expect(sim.result.labels.first?.clipped == true)
+        let image = sim.result.renderStrip()
+        let pixels = try #require(StripRenderer.grayPixels(image))
+        let x = StripRenderer.marginPixels + Int(20 * StripRenderer.pixelsPerMM)
+        let y = StripRenderer.marginPixels + Int((390 * 25.4 / 300 + 0.04) * StripRenderer.pixelsPerMM)
+        let v = pixels[y * image.width + x]
+        #expect(v > 100 && v < 180, "lost ink should be faint grey, got \(v)")
+    }
 }
