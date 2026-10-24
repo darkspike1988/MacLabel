@@ -1,0 +1,283 @@
+import AppKit
+import Foundation
+import SwiftUI
+import Testing
+import LabelMedia
+import LabelProtocol
+import LabelRender
+import LabelTransport
+import MacLabelKit
+@testable import MacLabelApp
+
+// MARK: - Pure view logic
+
+@Suite struct RollPickerLogicTests {
+    @Test func sizeQueryGroupsStandardFirst() {
+        let groups = RollPicker.groups(for: "32x57", catalog: .bundled)
+        #expect(groups.count == 1)
+        #expect(groups.first?.first?.id == "11354")
+        #expect(groups.first?.contains { $0.id == "1933084" } == true)
+    }
+
+    @Test func emptyQueryListsEveryRollOnce() {
+        let groups = RollPicker.groups(for: "  ", catalog: .bundled)
+        #expect(groups.flatMap { $0 }.count == MediaCatalog.bundled.rolls.count)
+    }
+
+    @Test func headFilterDropsWideRolls() {
+        let all = RollPicker.groups(for: "", catalog: .bundled, headDots: 672).flatMap { $0 }
+        #expect(!all.contains { $0.minHeadDots > 672 })
+        #expect(all.contains { $0.id == "11354" })
+    }
+
+    @Test func quickChoicesFitTheHead() {
+        let narrow = FirstRunRollSheet.quickChoices(catalog: .bundled, headDots: 672).map(\.id)
+        #expect(narrow.first == "11354")
+        #expect(!narrow.contains("S0904980"))
+        let wide = FirstRunRollSheet.quickChoices(catalog: .bundled, headDots: 1248).map(\.id)
+        #expect(wide.contains("S0904980"))
+    }
+
+    @Test func chipTextShowsIDAndReadingSize() {
+        #expect(RollPicker.chipText(appRoll11354) == "11354 · 57 × 32 mm")
+    }
+
+    @Test func feedDirectionFollowsRotation() {
+        #expect(FeedDirection(rotation: .upright) == .up)
+        #expect(FeedDirection(rotation: .clockwise90) == .left)
+        #expect(FeedDirection(rotation: .upsideDown) == .down)
+        #expect(FeedDirection(rotation: .counterClockwise90) == .right)
+    }
+
+    @Test func statusTextsInGerman() {
+        let de = localizedBundle(preferred: ["de"])
+        #expect(PrinterState.noPrinter.statusText(bundle: de) == "Kein Drucker")
+        #expect(PrinterState.ready(name: "LabelWriter 450").statusText(bundle: de) == "LabelWriter 450 · bereit")
+        #expect(PrinterState.busy(name: "LabelWriter 450").statusText(bundle: de) == "LabelWriter 450 · belegt")
+        #expect(PrinterState.printing(name: "LabelWriter 450").statusText(bundle: de) == "LabelWriter 450 · druckt …")
+    }
+}
+
+@Suite struct DocumentEditingTests {
+    @Test func placeholderGoesIntoTheLayoutsMainField() {
+        var d = LabelDocument()
+        d.text = "Nr. "
+        d.insertPlaceholder("n")
+        #expect(d.text == "Nr. {n}")
+        d.layout = .barcode
+        d.insertPlaceholder("Artikel")
+        #expect(d.barcodeValue == "{Artikel}")
+        d.layout = .qr
+        d.qrKind = .wifi
+        d.insertPlaceholder("ssid")
+        #expect(d.wifiSSID == "{ssid}")
+    }
+
+    @Test func counterToggleKeepsSettings() {
+        var d = LabelDocument()
+        #expect(!d.counterEnabled)
+        d.counterEnabled = true
+        #expect(d.counter == CounterSpec())
+        d.counterStart = 7
+        d.counterDigits = 3
+        #expect(d.counter == CounterSpec(start: 7, minimumDigits: 3))
+        d.counterEnabled = false
+        #expect(d.counter == nil)
+    }
+
+    @Test func spokenTextExpandsTheShownLabel() {
+        var d = LabelDocument()
+        d.text = "Kiste {n}"
+        d.counter = CounterSpec(start: 5)
+        d.copies = 3
+        #expect(d.spokenText(at: 1) == "Kiste 6")
+        d.layout = .barcode
+        d.barcodeValue = "12345"
+        #expect(d.spokenText(at: 0).contains("12345"))
+    }
+
+    @Test func effectiveRotationMatchesGeometry() {
+        let d = LabelDocument()
+        #expect(d.effectiveRotation(for: appRoll11354) == .upright)
+        let address = MediaCatalog.bundled.roll(sku: "99010")!
+        #expect(d.effectiveRotation(for: address) == .clockwise90)
+        var turned = d
+        turned.rotation = .upsideDown
+        #expect(turned.effectiveRotation(for: address) == .upsideDown)
+    }
+}
+
+// MARK: - Window smoke tests and snapshots
+
+@Suite(.serialized) struct ViewSmokeTests {
+    @Test @MainActor func noPrinter() async throws {
+        let m = makeViewModel(printers: [], remembered: nil)
+        await m.refreshPrinters()
+        try await check(m, name: "no-printer")
+    }
+
+    @Test @MainActor func readyWithTextPreview() async throws {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await m.refreshPrinters()
+        m.document.text = "Keller\nRegal 3"
+        await waitFor { m.previewResult?.pages.count == 1 }
+        await m.monitor.refreshNow()
+        try await check(m, name: "ready-text")
+    }
+
+    @Test @MainActor func qrPreview() async throws {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await m.refreshPrinters()
+        m.document.layout = .qr
+        m.document.qrKind = .url
+        m.document.qrText = "maclabel.example"
+        m.document.qrCaption = "Anleitung"
+        await waitFor { m.previewResult?.pages.count == 1 }
+        await m.monitor.refreshNow()
+        try await check(m, name: "qr")
+    }
+
+    @Test @MainActor func overflow() async throws {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await m.refreshPrinters()
+        m.document.text = String(repeating: "Überlauf ", count: 200)
+        await waitFor { m.previewResult?.overflowIndices == [0] }
+        #expect(m.previewResult?.overflowIndices == [0])
+        await m.monitor.refreshNow()
+        try await check(m, name: "overflow")
+    }
+
+    @Test @MainActor func seriesWhilePrinting() async throws {
+        // Status queries: 1 = ready check, 2 = after label 1, 3 = hangs until cancelled.
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354", blockFrom: 3, maxPages: 3)
+        await m.refreshPrinters()
+        m.document.text = "Kiste"
+        m.document.copies = 3
+        await waitFor { m.previewResult?.pages.count == 3 }
+        let job = Task { await m.print(allowOverflow: false) }
+        await waitFor { m.printPhase == .printing(done: 1, total: 3) }
+        #expect(m.printPhase == .printing(done: 1, total: 3))
+        try await check(m, name: "printing")
+        m.cancelPrint()
+        await job.value
+    }
+
+    @Test @MainActor func noRollChosen() async throws {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: nil)
+        await m.refreshPrinters()
+        m.needsRollChoice = false // keep the sheet out of this shot
+        try await check(m, name: "no-roll")
+    }
+
+    @Test @MainActor func layoutShortcutSwitchesLayout() async throws {
+        let m = makeViewModel(printers: [], remembered: nil)
+        let window = makeWindow(m, appearance: .aqua)
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(200))
+        let event = try #require(NSEvent.keyEvent(
+            with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
+            windowNumber: window.windowNumber, context: nil, characters: "4",
+            charactersIgnoringModifiers: "4", isARepeat: false, keyCode: 21
+        ))
+        #expect(window.performKeyEquivalent(with: event))
+        #expect(m.document.layout == .qr)
+    }
+
+    @Test @MainActor func firstRunSheetRenders() async throws {
+        let model = makeViewModel(printers: [], remembered: nil)
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            let window = makeWindow(FirstRunRollSheet().environment(model), size: CGSize(width: 540, height: 600), appearance: appearance)
+            try await Task.sleep(for: .milliseconds(300))
+            let image = try snapshot(of: try #require(window.contentView?.superview))
+            #expect(distinctColors(image) > 1)
+            try saveIfRequested(image, name: "first-run-sheet-\(appearance == .aqua ? "light" : "dark")")
+            window.close()
+        }
+    }
+
+    @Test @MainActor func moreInspectorRenders() async throws {
+        let model = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await model.refreshPrinters()
+        model.document.counterEnabled = true
+        model.document.csv = try CSVTable(parsing: "Name;Ort\nKiste;Keller\n")
+        let window = makeWindow(MoreInspector().environment(model), size: CGSize(width: 320, height: 600), appearance: .aqua)
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(300))
+        let image = try snapshot(of: try #require(window.contentView?.superview))
+        #expect(distinctColors(image) > 1)
+        try saveIfRequested(image, name: "more-inspector-light")
+    }
+
+    // MARK: Helpers
+
+    @MainActor
+    private func check(_ model: AppModel, name: String) async throws {
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            let window = makeWindow(model, appearance: appearance)
+            try await Task.sleep(for: .milliseconds(400))
+            let view = try #require(window.contentView?.superview ?? window.contentView)
+            let image = try snapshot(of: view)
+            #expect(image.pixelsWide > 0 && image.pixelsHigh > 0)
+            #expect(distinctColors(image) > 1, "\(name) rendered blank")
+            try saveIfRequested(image, name: "\(name)-\(appearance == .aqua ? "light" : "dark")")
+            window.close()
+        }
+    }
+}
+
+// MARK: - Shared helpers
+
+@MainActor
+private func makeWindow(_ model: AppModel, appearance: NSAppearance.Name) -> NSWindow {
+    makeWindow(MainWindow().environment(model), size: CGSize(width: 980, height: 600), appearance: appearance)
+}
+
+/// An offscreen window (never ordered in) hosting `root`.
+@MainActor
+private func makeWindow(_ root: some View, size: CGSize, appearance: NSAppearance.Name) -> NSWindow {
+    _ = NSApplication.shared
+    let window = NSWindow(
+        contentRect: CGRect(origin: .zero, size: size),
+        styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+        backing: .buffered, defer: false
+    )
+    window.isReleasedWhenClosed = false
+    window.appearance = NSAppearance(named: appearance)
+    window.contentViewController = NSHostingController(rootView: root)
+    window.setContentSize(size)
+    window.layoutIfNeeded()
+    return window
+}
+
+@MainActor
+private func snapshot(of view: NSView) throws -> NSBitmapImageRep {
+    view.layoutSubtreeIfNeeded()
+    let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+    view.cacheDisplay(in: view.bounds, to: rep)
+    return rep
+}
+
+private func distinctColors(_ rep: NSBitmapImageRep) -> Int {
+    var seen = Set<UInt32>()
+    let stepX = max(1, rep.pixelsWide / 60), stepY = max(1, rep.pixelsHigh / 60)
+    for y in stride(from: 0, to: rep.pixelsHigh, by: stepY) {
+        for x in stride(from: 0, to: rep.pixelsWide, by: stepX) {
+            guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
+            let key = UInt32(c.redComponent * 255) << 16 | UInt32(c.greenComponent * 255) << 8 | UInt32(c.blueComponent * 255)
+            seen.insert(key)
+            if seen.count > 8 { return seen.count }
+        }
+    }
+    return seen.count
+}
+
+/// Writes a PNG only when `MACLABEL_SNAPSHOTS=1` (directory: `MACLABEL_SNAPSHOTS_DIR` or the temp dir).
+private func saveIfRequested(_ rep: NSBitmapImageRep, name: String) throws {
+    let env = ProcessInfo.processInfo.environment
+    guard env["MACLABEL_SNAPSHOTS"] == "1" else { return }
+    let dir = URL(fileURLWithPath: env["MACLABEL_SNAPSHOTS_DIR"] ?? NSTemporaryDirectory())
+        .appending(path: env["MACLABEL_SNAPSHOTS_DIR"] == nil ? "maclabel-app-shots" : "")
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let data = try #require(rep.representation(using: .png, properties: [:]))
+    try data.write(to: dir.appending(path: "\(name).png"))
+}

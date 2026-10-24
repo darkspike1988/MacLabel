@@ -35,9 +35,11 @@ public final class PrinterMonitor {
         updateLoop()
     }
 
-    /// Stops polling (during a print); `resume()` restarts it if something is visible.
+    /// Stops polling (during a print) and shows the target as printing; `resume()` restarts
+    /// polling if something is visible.
     public func pause() {
         paused = true
+        if let target { state = .printing(name: target.model.name) }
         updateLoop()
     }
 
@@ -71,7 +73,13 @@ public final class PrinterMonitor {
         if target == nil || state == .disconnected, let rediscover {
             await rediscover()
         }
-        state = await printer.state(for: target)
+        let result = await printer.state(for: target)
+        // A poll that was already running when the print paused us must not overwrite "printing".
+        if paused, let target {
+            state = .printing(name: target.model.name)
+        } else {
+            state = result
+        }
         // Only "busy" backs off; `.printing` is answered without opening the device.
         if case .busy = state { return busyBackoff }
         return interval

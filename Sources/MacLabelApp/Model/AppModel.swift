@@ -158,6 +158,24 @@ public final class AppModel {
         }
     }
 
+    /// Whether a print is waiting for the printer or running.
+    public var isPrinting: Bool {
+        switch printPhase {
+        case .positioning, .printing: true
+        default: false
+        }
+    }
+
+    /// Why Print is unavailable before anything is sent, or `nil` when it can start.
+    public var printBlockReason: String? {
+        guard let target = selectedPrinter else { return L10n.string("No printer connected.") }
+        guard target.model.family == .lwClassic else {
+            return PrinterSelectionError.unsupported(modelName: target.model.name).localizedDescription
+        }
+        guard roll != nil else { return L10n.string("No roll selected.") }
+        return nil
+    }
+
     /// Stops the running print after the current label.
     public func cancelPrint() {
         printTask?.cancel()
@@ -201,14 +219,16 @@ public final class AppModel {
         let model = selectedPrinter.flatMap { $0.model.family == .lwClassic ? $0.model : nil } ?? Self.fallbackModel
         previewTask = Task { [weak self, preview] in
             let result = await preview.update(document: document, roll: roll, model: model) { first in
-                self?.showPreview(first)
+                self?.showPreview(first, final: false)
             }
-            if let result { self?.showPreview(result) }
+            if let result { self?.showPreview(result, final: true) }
         }
     }
 
-    private func showPreview(_ result: PreviewResult) {
+    /// The page-1 pass must not move the reader back to page 1; only the final result clamps
+    /// `previewPage`. Views therefore clamp the index themselves when reading `pages`.
+    private func showPreview(_ result: PreviewResult, final: Bool) {
         previewResult = result
-        previewPage = min(previewPage, max(result.pages.count - 1, 0))
+        if final { previewPage = min(previewPage, max(result.pages.count - 1, 0)) }
     }
 }

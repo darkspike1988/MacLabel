@@ -21,7 +21,8 @@ import MacLabelKit
         try await Task.sleep(for: .milliseconds(100))
         #expect(factory.log.statusQueries == 0)
         m.visibilityChanged(visible: true)
-        try await Task.sleep(for: .milliseconds(100))
+        // Wait for two polls; a busy main actor (window tests running in parallel) may delay them.
+        await waitFor(timeout: .seconds(3)) { factory.log.statusQueries >= 2 }
         #expect(factory.log.statusQueries >= 2)
         #expect(m.state == .ready(name: "LabelWriter 450"))
         m.visibilityChanged(visible: false)
@@ -68,7 +69,7 @@ import MacLabelKit
         try await Task.sleep(for: .milliseconds(150))
         #expect(factory.log.opens == 1)
         #expect(m.state == .busy(name: "LabelWriter 450"))
-        try await Task.sleep(for: .milliseconds(200))
+        await waitFor(timeout: .seconds(3)) { factory.log.opens >= 2 }
         #expect(factory.log.opens >= 2)
         m.visibilityChanged(visible: false)
     }

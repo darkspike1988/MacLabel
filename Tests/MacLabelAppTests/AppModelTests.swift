@@ -205,7 +205,8 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
 }
 
 @Test @MainActor func positioningEventShownAsPhase() async throws {
-    let clock = FixedClock(lastFeed: Date().addingTimeInterval(-9.8))
+    // 3 s of pause left: observable even when the first window test blocks the main actor for ~2 s.
+    let clock = FixedClock(lastFeed: Date().addingTimeInterval(-7))
     let printer = LabelPrinter(
         factory: AppStubFactory(list: [appLW450Printer]), preferences: appPrefs(remembered: "11354"), formFeedClock: clock
     )
@@ -229,4 +230,59 @@ private struct FixedClock: FormFeedClock {
     let lastFeed: Date
     func lastFormFeed(serial: String?) -> Date? { lastFeed }
     func recordFormFeed(serial: String?, at date: Date) {}
+}
+
+// MARK: - Carry-overs from Task 5
+
+@Suite struct ViewCarryOverTests {
+    @Test @MainActor func previewPageSurvivesTheFirstPagePass() async {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354", maxPages: 3)
+        await m.refreshPrinters()
+        m.document.text = "a"
+        m.document.copies = 3
+        await waitFor { m.previewResult?.pages.count == 3 }
+        m.previewPage = 2
+        let old = m.previewResult?.pages.first?.preview
+        m.document.text = "b"
+        // The final result has 3 pages; the page-1 pass before it has only one.
+        await waitFor { m.previewResult?.pages.count == 3 && m.previewResult?.pages.first?.preview !== old }
+        #expect(m.previewPage == 2)
+    }
+
+    @Test @MainActor func previewPageClampedByTheFinalResult() async {
+        let m = makeViewModel(printers: [appLW450Printer], remembered: "11354", maxPages: 3)
+        await m.refreshPrinters()
+        m.document.text = "a"
+        m.document.copies = 3
+        await waitFor { m.previewResult?.pages.count == 3 }
+        m.previewPage = 2
+        m.document.copies = 1
+        await waitFor { m.previewResult?.totalLabels == 1 && m.previewPage == 0 }
+        #expect(m.previewResult?.pages.count == 1 && m.previewPage == 0)
+    }
+
+    @Test @MainActor func pauseShowsPrinting() {
+        let printer = LabelPrinter(factory: AppStubFactory(list: [appLW450Printer]), preferences: appPrefs(), formFeedClock: AppNoStampClock())
+        let monitor = PrinterMonitor(printer: printer)
+        monitor.target = appLW450Printer
+        monitor.pause()
+        #expect(monitor.state == .printing(name: "LabelWriter 450"))
+        monitor.resume()
+    }
+}
+
+@Suite struct PrintAvailabilityTests {
+    @Test @MainActor func blockReasonFollowsPrinterAndRoll() async {
+        let none = makeViewModel(printers: [], remembered: nil)
+        await none.refreshPrinters()
+        #expect(none.printBlockReason != nil)
+
+        let noRoll = makeViewModel(printers: [appLW450Printer], remembered: nil)
+        await noRoll.refreshPrinters()
+        #expect(noRoll.printBlockReason == String(localized: "No roll selected.", bundle: L10n.bundle))
+
+        let ready = makeViewModel(printers: [appLW450Printer], remembered: "11354")
+        await ready.refreshPrinters()
+        #expect(ready.printBlockReason == nil && !ready.isPrinting)
+    }
 }

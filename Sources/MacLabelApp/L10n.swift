@@ -17,7 +17,13 @@ private let appResourceBundle: Bundle = {
 }()
 
 enum L10n {
-    static var bundle: Bundle { localizedBundle(preferred: Locale.preferredLanguages) }
+    /// Chosen once per launch; macOS relaunches apps to change their language anyway.
+    static let bundle: Bundle = localizedBundle(preferred: Locale.preferredLanguages)
+
+    /// A user-facing text from the app catalog in the chosen language.
+    static func string(_ key: String.LocalizationValue) -> String {
+        String(localized: key, bundle: bundle)
+    }
 
     static func cancelledText(printed: Int, total: Int, preferred: [String] = Locale.preferredLanguages) -> String {
         String(
