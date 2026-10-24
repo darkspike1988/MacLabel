@@ -5,7 +5,7 @@ import SwiftUI
 /// Reads `AppModel` from the environment.
 public struct MainWindow: View {
     @Environment(AppModel.self) private var model
-    @State private var showsRollPicker = false
+    @Environment(\.undoManager) private var undoManager
     @State private var showsInspector = false
 
     /// Editor (380: the five-segment layout picker needs about that) + preview (420: the 11354 label at 2x is 336.5 pt, plus feed arrow and 2 x 24 padding).
@@ -34,14 +34,19 @@ public struct MainWindow: View {
         .navigationTitle(Text(verbatim: "MacLabel"))
         .toolbar {
             ToolbarItem(placement: .navigation) {
-                RollChip(isPresented: $showsRollPicker)
+                RollChip(isPresented: $model.showsRollPicker)
             }
             ToolbarItem(placement: .status) {
                 PrinterStatusIndicator(state: model.monitor.state)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button(L10n.string("More"), systemImage: "slider.horizontal.3", action: toggleInspector)
-                    .help(L10n.string("Density, mode, rotation, counter and CSV"))
+                // A toggle, so the button shows whether the inspector is open (View › Show/Hide Inspector, ⌃⌘I).
+                Toggle(isOn: $showsInspector) {
+                    Label(L10n.string("More"), systemImage: "slider.horizontal.3")
+                }
+                .help(showsInspector
+                    ? L10n.string("Hide density, mode, rotation, counter and CSV")
+                    : L10n.string("Show density, mode, rotation, counter and CSV"))
             }
         }
         .inspector(isPresented: $showsInspector) {
@@ -60,6 +65,9 @@ public struct MainWindow: View {
         .sheet(isPresented: $model.needsRollChoice) {
             FirstRunRollSheet()
         }
+        .focusedSceneValue(\.mainWindowModel, model)
+        .onAppear { model.undoManager = undoManager }
+        .onChange(of: undoManager) { model.undoManager = undoManager }
         .background {
             VisibilityReporter { visible in
                 model.monitor.visibilityChanged(visible: visible)
@@ -71,6 +79,5 @@ public struct MainWindow: View {
         }
     }
 
-    private func openRollPicker() { showsRollPicker = true }
-    private func toggleInspector() { showsInspector.toggle() }
+    private func openRollPicker() { model.showsRollPicker = true }
 }

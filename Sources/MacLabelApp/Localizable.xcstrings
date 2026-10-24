@@ -518,23 +518,6 @@
         }
       }
     },
-    "Density, mode, rotation, counter and CSV": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Density, mode, rotation, counter and CSV"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dichte, Modus, Drehung, Zähler und CSV"
-          }
-        }
-      }
-    },
     "Density": {
       "extractionState": "manual",
       "localizations": {
@@ -2350,6 +2333,244 @@
           "stringUnit": {
             "state": "translated",
             "value": "Führe diesen Befehl im Terminal aus, um maclabel dort zu nutzen. Er fragt nach dem Administratorpasswort. App und Kommandozeilenwerkzeug merken sich Rollen getrennt."
+          }
+        }
+      }
+    },
+    "Install Command Line Tool…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Command Line Tool…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommandozeilenwerkzeug installieren…"
+          }
+        }
+      }
+    },
+    "Label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Label"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etikett"
+          }
+        }
+      }
+    },
+    "Hide density, mode, rotation, counter and CSV": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide density, mode, rotation, counter and CSV"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichte, Modus, Drehung, Zähler und CSV ausblenden"
+          }
+        }
+      }
+    },
+    "Show density, mode, rotation, counter and CSV": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show density, mode, rotation, counter and CSV"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichte, Modus, Drehung, Zähler und CSV einblenden"
+          }
+        }
+      }
+    },
+    "Replace Label Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace Label Text"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etikettentext ersetzen"
+          }
+        }
+      }
+    },
+    "There is no text to print.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is no text to print."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es gibt keinen Text zum Drucken."
+          }
+        }
+      }
+    },
+    "The number of copies must be between 1 and 999.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The number of copies must be between 1 and 999."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Anzahl muss zwischen 1 und 999 liegen."
+          }
+        }
+      }
+    },
+    "No roll is chosen for this printer. Choose the loaded roll in MacLabel or name it in the shortcut.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No roll is chosen for this printer. Choose the loaded roll in MacLabel or name it in the shortcut."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diesen Drucker ist keine Rolle gewählt. Wähle die eingelegte Rolle in MacLabel oder gib sie im Kurzbefehl an."
+          }
+        }
+      }
+    },
+    "No roll matches “%@”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No roll matches “%@”."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Rolle passt zu „%@“."
+          }
+        }
+      }
+    },
+    "“%@” matches several rolls (%@). Name the article number.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” matches several rolls (%2$@). Name the article number."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%1$@“ passt zu mehreren Rollen (%2$@). Gib die Artikelnummer an."
+          }
+        }
+      }
+    },
+    "The text does not fit on the label. Open it in MacLabel to shorten it or choose another roll.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The text does not fit on the label. Open it in MacLabel to shorten it or choose another roll."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Text passt nicht auf das Etikett. Öffne ihn in MacLabel, um ihn zu kürzen oder eine andere Rolle zu wählen."
+          }
+        }
+      }
+    },
+    "The printer cannot print right now: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The printer cannot print right now: %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Drucker kann gerade nicht drucken: %@."
+          }
+        }
+      }
+    },
+    "Print… (menu item)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Print…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drucken…"
+          }
+        }
+      }
+    },
+    "Choose Roll… (menu item)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Roll…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rolle wählen…"
           }
         }
       }

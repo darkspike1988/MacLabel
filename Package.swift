@@ -8,6 +8,8 @@ let package = Package(
     products: [
         .library(name: "MacLabelKit", targets: ["MacLabelKit"]),
         .library(name: "MacLabelApp", targets: ["MacLabelApp"]),
+        // For the Xcode target that builds the CLI into MacLabel.app (`simulate` command).
+        .library(name: "LabelSimulator", targets: ["LabelSimulator"]),
         .executable(name: "maclabel", targets: ["maclabel"]),
     ],
     dependencies: [

@@ -229,20 +229,6 @@ import MacLabelKit
         try await check(m, name: "no-roll", expectsPaper: false)
     }
 
-    @Test @MainActor func layoutShortcutSwitchesLayout() async throws {
-        let m = makeViewModel(printers: [], remembered: nil)
-        let window = makeWindow(m, appearance: .aqua)
-        defer { window.close() }
-        try await Task.sleep(for: .milliseconds(200))
-        let event = try #require(NSEvent.keyEvent(
-            with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
-            windowNumber: window.windowNumber, context: nil, characters: "4",
-            charactersIgnoringModifiers: "4", isARepeat: false, keyCode: 21
-        ))
-        #expect(window.performKeyEquivalent(with: event))
-        #expect(m.document.layout == .qr)
-    }
-
     @Test @MainActor func firstRunSheetRenders() async throws {
         let model = makeViewModel(printers: [], remembered: nil)
         for appearance in [NSAppearance.Name.aqua, .darkAqua] {

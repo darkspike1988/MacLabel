@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The leading editor: layout segments (⌘1 … ⌘5), the fields of the chosen layout and,
+/// The leading editor: layout segments (⌘1 … ⌘5 via the Label menu), the fields of the chosen layout and,
 /// for series, the placeholder menu.
 struct EditorForm: View {
     @Environment(AppModel.self) private var model
@@ -37,8 +37,5 @@ struct EditorForm: View {
             }
         }
         .formStyle(.grouped)
-        .background {
-            LayoutShortcuts()
-        }
     }
 }

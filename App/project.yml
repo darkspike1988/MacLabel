@@ -1,0 +1,91 @@
+# XcodeGen spec for MacLabel.app. Generate with: xcodegen generate --spec App/project.yml
+# (scripts/build-app.sh does this). The generated App/MacLabel.xcodeproj is not checked in.
+name: MacLabel
+options:
+  bundleIdPrefix: io.github.darkspike1988
+  deploymentTarget:
+    macOS: "26.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: YES
+    # No get-task-allow: the bundle carries exactly the entitlements from the files below.
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    DEAD_CODE_STRIPPING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+packages:
+  MacLabelKit:
+    path: ..
+  swift-argument-parser:
+    url: https://github.com/apple/swift-argument-parser
+    from: 1.5.0
+targets:
+  MacLabel:
+    type: application
+    platform: macOS
+    sources:
+      - path: MacLabel
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_NAME: MacLabel
+        # Not "MacLabel": the volume is case-insensitive, so it would collide with the embedded
+        # Contents/MacOS/maclabel (the CLI). The bundle and menu name stay "MacLabel".
+        EXECUTABLE_NAME: MacLabelApp
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.darkspike1988.maclabel
+        INFOPLIST_FILE: MacLabel/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: MacLabel/MacLabel.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_IDENTITY: "-"
+        COMBINE_HIDPI_IMAGES: YES
+    dependencies:
+      - package: MacLabelKit
+        product: MacLabelApp
+      # The command line tool, embedded as Contents/MacOS/maclabel and signed (inside out) on copy.
+      - target: maclabel-cli
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
+  maclabel-cli:
+    type: tool
+    platform: macOS
+    sources:
+      - path: ../Sources/maclabel
+    settings:
+      base:
+        PRODUCT_NAME: maclabel
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.darkspike1988.maclabel.cli
+        # A stable signing identifier for the tool (Info.plist section inside the binary).
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        CODE_SIGN_ENTITLEMENTS: CLI/maclabel-cli.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_IDENTITY: "-"
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: MacLabelKit
+        product: MacLabelKit
+      - package: MacLabelKit
+        product: LabelSimulator
+      - package: swift-argument-parser
+        product: ArgumentParser
+schemes:
+  MacLabel:
+    build:
+      targets:
+        MacLabel: all
+        maclabel-cli: all

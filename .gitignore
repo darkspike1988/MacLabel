@@ -8,3 +8,7 @@ xcuserdata/
 .superpowers/
 __pycache__/
 *.pyc
+
+# Xcode app build (XcodeGen output and build products)
+App/MacLabel.xcodeproj
+build/

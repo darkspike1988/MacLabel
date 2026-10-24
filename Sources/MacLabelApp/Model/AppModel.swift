@@ -61,6 +61,17 @@ public final class AppModel {
     public private(set) var importError: String?
     public var showsImportError = false
     public private(set) var printPhase: PrintPhase = .idle
+    /// The roll popover in the window's toolbar (⌘L, Label › Choose Roll…).
+    public var showsRollPicker = false
+    /// The "Print anyway?" question before an overflowing print (Print button and File › Print…).
+    public var confirmsOverflowPrint = false
+    /// The main window's undo manager (set by the window). Replacing the document with
+    /// `load(text:)` registers there, so Edit › Undo brings the previous document back.
+    @ObservationIgnored public weak var undoManager: UndoManager? {
+        didSet { registerPendingUndo() }
+    }
+    /// The document a `load(text:)` replaced while no window (undo manager) was there yet.
+    @ObservationIgnored private var pendingUndo: LabelDocument?
     public let monitor: PrinterMonitor
 
     @ObservationIgnored private let printer: LabelPrinter
@@ -154,12 +165,61 @@ public final class AppModel {
         }
     }
 
-    /// Text from the Service or an App Intent.
+    /// Text from the Service or "Text too long – open in window". Replaces the window's text label;
+    /// Edit › Undo restores the previous document (registered as soon as the window is there).
     public func load(text: String) {
         var updated = document
         updated.layout = .text
         updated.text = text
+        guard updated != document else { return }
+        let previous = document
         document = updated
+        if let undoManager {
+            registerUndo(restoring: previous, on: undoManager)
+        } else {
+            pendingUndo = previous
+        }
+    }
+
+    private func registerPendingUndo() {
+        guard let undoManager, let previous = pendingUndo else { return }
+        pendingUndo = nil
+        registerUndo(restoring: previous, on: undoManager)
+    }
+
+    /// Registers "restore `previous`" as one undo step.
+    private func registerUndo(restoring previous: LabelDocument, on undoManager: UndoManager) {
+        undoManager.beginUndoGrouping()
+        registerRestore(previous, on: undoManager)
+        undoManager.endUndoGrouping()
+    }
+
+    /// Undoing restores `previous` and registers the way back (redo, and undo again after a redo).
+    private func registerRestore(_ previous: LabelDocument, on undoManager: UndoManager) {
+        // Weak: the undo manager owns this action; a strong capture would keep it alive forever.
+        undoManager.registerUndo(withTarget: self) { [weak undoManager] model in
+            MainActor.assumeIsolated {
+                let current = model.document
+                model.document = previous
+                if let undoManager { model.registerRestore(current, on: undoManager) }
+            }
+        }
+        undoManager.setActionName(L10n.string("Replace Label Text"))
+    }
+
+    /// Print can start now (File › Print…, the Print button).
+    public var canRequestPrint: Bool {
+        printBlockReason == nil && !isPrinting && previewResult?.error == nil
+    }
+
+    /// File › Print… and the Print button: asks "Print anyway?" first when content overflows, else prints.
+    public func requestPrint() {
+        guard canRequestPrint else { return }
+        if previewResult?.overflowIndices.isEmpty == false {
+            confirmsOverflowPrint = true
+        } else {
+            Task { await print(allowOverflow: false) }
+        }
     }
 
     /// Prints the whole series on the selected printer. Returns when the print ended.

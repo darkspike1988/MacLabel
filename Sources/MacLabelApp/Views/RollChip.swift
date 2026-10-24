@@ -1,7 +1,8 @@
 import LabelMedia
 import SwiftUI
 
-/// The toolbar chip "11354 · 57 × 32 mm" (⌘L) that opens the roll search in a popover.
+/// The toolbar chip "11354 · 57 × 32 mm" that opens the roll search in a popover
+/// (also Label › Choose Roll…, ⌘L, which sets the same model flag).
 struct RollChip: View {
     @Environment(AppModel.self) private var model
     @Binding var isPresented: Bool
@@ -13,7 +14,6 @@ struct RollChip: View {
                 .labelStyle(.titleAndIcon)
                 .monospacedDigit()
         }
-        .keyboardShortcut("l", modifiers: .command)
         .help(L10n.string("Choose the loaded roll (⌘L)"))
         .accessibilityLabel(model.roll.map { L10n.string("Roll: \($0.id), \($0.sizeText)") } ?? L10n.string("No roll selected."))
         .accessibilityHint(L10n.string("Opens the roll search."))
