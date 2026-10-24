@@ -204,3 +204,47 @@ final class Counter: @unchecked Sendable {
                                  settleAfterTopOfForm: .seconds(2))
     #expect(ContinuousClock.now - start < .seconds(1))
 }
+
+// Hardware finding (24.10.2026): a job that starts within seconds of the previous job's
+// form feed (ESC E) lands too low, regardless of status waits, print mode or compression;
+// after a longer pause it is correct. MacLabel therefore keeps a minimum pause after the
+// last form feed of the same printer (Weg A, docs/research/lw450-protocol.md §13.2).
+final class MemoryFormFeedClock: FormFeedClock, @unchecked Sendable {
+    var stamps: [String: Date] = [:]
+    func lastFormFeed(serial: String?) -> Date? { stamps[serial ?? "default"] }
+    func recordFormFeed(serial: String?, at date: Date) { stamps[serial ?? "default"] = date }
+}
+@Test func waitsForMinimumPauseAfterPreviousFormFeed() async throws {
+    let clock = MemoryFormFeedClock(); clock.recordFormFeed(serial: "A", at: Date())
+    let t = ScriptedTransport(statuses: [0x03, 0x03])
+    let start = ContinuousClock.now
+    try await PrintService.print(req(1), using: t, spacing: .init(clock: clock, serial: "A", minimumPause: .milliseconds(300)))
+    #expect(ContinuousClock.now - start >= .milliseconds(280))
+}
+@Test func noPauseWhenPreviousFormFeedIsOld() async throws {
+    let clock = MemoryFormFeedClock(); clock.recordFormFeed(serial: "A", at: Date().addingTimeInterval(-60))
+    let t = ScriptedTransport(statuses: [0x03, 0x03])
+    let start = ContinuousClock.now
+    try await PrintService.print(req(1), using: t, spacing: .init(clock: clock, serial: "A", minimumPause: .seconds(5)))
+    #expect(ContinuousClock.now - start < .seconds(1))
+}
+@Test func recordsFormFeedAfterJob() async throws {
+    let clock = MemoryFormFeedClock()
+    let t = ScriptedTransport(statuses: [0x03, 0x03])
+    try await PrintService.print(req(1), using: t, spacing: .init(clock: clock, serial: "B", minimumPause: .seconds(5)))
+    let stamp = try #require(clock.lastFormFeed(serial: "B"))
+    #expect(abs(stamp.timeIntervalSinceNow) < 2)
+}
+@Test func pauseIsPerPrinter() async throws {
+    let clock = MemoryFormFeedClock(); clock.recordFormFeed(serial: "A", at: Date())
+    let t = ScriptedTransport(statuses: [0x03, 0x03])
+    let start = ContinuousClock.now
+    try await PrintService.print(req(1), using: t, spacing: .init(clock: clock, serial: "B", minimumPause: .seconds(5)))
+    #expect(ContinuousClock.now - start < .seconds(1))
+}
+@Test func userDefaultsClockRoundTrip() {
+    let c = UserDefaultsFormFeedClock(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+    #expect(c.lastFormFeed(serial: "X") == nil)
+    let now = Date(); c.recordFormFeed(serial: "X", at: now)
+    #expect(abs(c.lastFormFeed(serial: "X")!.timeIntervalSince(now)) < 0.01)
+}

@@ -144,11 +144,19 @@ public enum PrintService {
         topOfFormTimeout: Duration = .seconds(10),
         pollInterval: Duration = .milliseconds(100),
         settleAfterTopOfForm: Duration = .seconds(1),
+        spacing: JobSpacing? = nil,
         progress: (@Sendable (Int, Int) -> Void)? = nil
     ) async throws {
         let (_, job) = try build(request)
         let total = job.labels.count
         var headerSent = false
+        if let spacing {
+            let remaining = spacing.remainingPause()
+            if remaining > .zero {
+                debugLog("pause \(remaining) after previous form feed")
+                try await Task.sleep(for: remaining)
+            }
+        }
         do {
             try await waitUntilReady(
                 transport, needsTopOfForm: request.roll.kind == .dieCut,
@@ -159,7 +167,7 @@ public enum PrintService {
             headerSent = true
             for (index, bitmap) in job.labels.enumerated() {
                 try Task.checkCancellation()
-                try await transport.write(LWClassicEncoder.label(bitmap, lengthLines: job.labelLengthLines, quality: job.quality))
+                try await transport.write(LWClassicEncoder.label(bitmap, lengthLines: job.labelLengthLines))
                 let status = try await transport.status()
                 progress?(index + 1, total)
                 guard status.canPrint else {
@@ -167,7 +175,8 @@ public enum PrintService {
                 }
                 if index < total - 1 { try await transport.write(LWClassicEncoder.betweenLabels) }
             }
-            try await transport.write(LWClassicEncoder.endOfJob(quality: job.quality))
+            try await transport.write(LWClassicEncoder.endOfJob)
+            spacing?.clock.recordFormFeed(serial: spacing?.serial, at: Date())
         } catch {
             if headerSent {
                 // Discard partial data; resync + ESC @ never moves paper. Unstructured task:
