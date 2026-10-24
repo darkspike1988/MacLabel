@@ -14,7 +14,7 @@ func localizedBundle(preferred: [String]) -> Bundle {
 
 /// The kit's resource bundle, also found when the CLI runs from inside an app bundle or via a symlink.
 private let kitResourceBundle: Bundle = {
-    ResourceLocator.bundle(named: "MacLabelKit_MacLabelKit", fallback: Bundle.module) ?? Bundle.module
+    ResourceLocator.bundle(named: "MacLabelKit_MacLabelKit", fallback: Bundle.module)!
 }()
 
 enum L10n {

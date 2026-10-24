@@ -48,6 +48,46 @@ import Testing
         FileManager.default.temporaryDirectory.appendingPathComponent("maclabel-\(UUID().uuidString)-\(name)")
     }
 
+    /// The CLI inside an app bundle, started by bare name through a symlink on PATH, must find its resources.
+    @Test func resourcesFoundViaSymlinkOnPath() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appendingPathComponent("maclabel-app-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: root) }
+        let macOS = root.appendingPathComponent("X.app/Contents/MacOS")
+        let resources = root.appendingPathComponent("X.app/Contents/Resources")
+        let bin = root.appendingPathComponent("bin")
+        for dir in [macOS, resources, bin] { try fm.createDirectory(at: dir, withIntermediateDirectories: true) }
+        try fm.copyItem(at: Self.binaryURL, to: macOS.appendingPathComponent("maclabel"))
+        let built = Self.binaryURL.deletingLastPathComponent()
+        let bundles = try fm.contentsOfDirectory(atPath: built.path).filter {
+            $0.hasPrefix("MacLabelKit_") && $0.hasSuffix(".bundle") && !$0.contains("Tests")
+        }
+        #expect(!bundles.isEmpty)
+        for name in bundles { try fm.copyItem(at: built.appendingPathComponent(name), to: resources.appendingPathComponent(name)) }
+        // Mark the copy so the test proves the bundle beside the executable is used, not the build directory's.
+        let copiedJSON = try #require(fm.enumerator(at: resources, includingPropertiesForKeys: nil)?
+            .compactMap { $0 as? URL }.first { $0.lastPathComponent == "media.json" })
+        let json = try String(contentsOf: copiedJSON, encoding: .utf8)
+        try json.replacingOccurrences(of: "\"Vielzweck\"", with: "\"Vielzweck-COPY\"").write(to: copiedJSON, atomically: true, encoding: .utf8)
+        try fm.createSymbolicLink(at: bin.appendingPathComponent("maclabel"), withDestinationURL: macOS.appendingPathComponent("maclabel"))
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["maclabel", "rolls", "search", "32x57"]
+        process.environment = ["PATH": bin.path, "MACLABEL_DEFAULTS_SUITE": "maclabel.test.\(UUID().uuidString)"]
+        process.currentDirectoryURL = URL(fileURLWithPath: "/")
+        let out = Pipe(), err = Pipe()
+        process.standardOutput = out
+        process.standardError = err
+        try process.run()
+        let outText = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        let errText = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        process.waitUntilExit()
+        #expect(process.terminationStatus == 0, "\(errText)")
+        #expect(outText.contains("11354"))
+        #expect(outText.contains("Vielzweck-COPY"), "resources came from elsewhere:\n\(outText)")
+    }
+
     @Test func rollsSearchFindsRoll() throws {
         let r = try Self.run(["rolls", "search", "32x57"])
         #expect(r.status == 0)

@@ -14,7 +14,7 @@ public struct MediaCatalog: Sendable {
     }
 
     private static let resourceBundle: Bundle = {
-        ResourceLocator.bundle(named: "MacLabelKit_LabelMedia", fallback: Bundle.module) ?? Bundle.module
+        ResourceLocator.bundle(named: "MacLabelKit_LabelMedia", fallback: Bundle.module)!
     }()
 
     public static let bundled: MediaCatalog = {
