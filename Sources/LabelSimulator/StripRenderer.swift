@@ -48,7 +48,7 @@ public enum StripRenderer {
                     let cx = Double(x) < Double(x0) + r ? Double(x0) + r : (Double(x) > Double(x1) - r ? Double(x1) - r : Double(x))
                     let cy = Double(y) < Double(y0) + r ? Double(y0) + r : (Double(y) > Double(y1) - r ? Double(y1) - r : Double(y))
                     let dx = Double(x) - cx, dy = Double(y) - cy
-                    if dx * dx + dy * dy <= r * r { buffer[y * width + x] = label }
+                    if dx * dx + dy * dy <= r * r + 1e-6 { buffer[y * width + x] = label }
                 }
             }
             // Sense hole outline (schematic: 3 mm × 1.5 mm, 1 mm from the left edge).

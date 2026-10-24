@@ -213,7 +213,8 @@ private let step600 = 25.4 / 600
             let x = StripRenderer.marginPixels + Int(20 * StripRenderer.pixelsPerMM)
             return (0..<image.height).filter { pixels[$0 * image.width + x] < 50 }.count
         }
-        #expect(try blackRows(0x68) == 2 * (try blackRows(0x69)))
+        let t = try blackRows(0x68), g = try blackRows(0x69)
+        #expect(t == 2 * g, "text \(t) graphics \(g)")
     }
 
     @Test func inkOnBackingIsDrawnAsLostInk() throws {
