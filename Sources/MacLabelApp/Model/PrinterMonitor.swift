@@ -2,7 +2,7 @@ import Foundation
 import LabelTransport
 import Observation
 
-/// Polls the status of `target` every `interval`, but only while at least one window or panel is
+/// Polls the status of `target` every `interval`, but only while polling is enabled and at least one window or panel is
 /// visible and no print is running. After "busy" (another app holds the printer) it waits `busyBackoff`.
 @MainActor @Observable
 public final class PrinterMonitor {
@@ -12,6 +12,11 @@ public final class PrinterMonitor {
     /// Called before a poll when no printer is known or the last poll found it disconnected,
     /// so a re-plugged printer (new registry id) is picked up again.
     @ObservationIgnored public var rediscover: (@MainActor () async -> Void)?
+
+    /// The "poll the printer status automatically" setting; `false` stops the loop even while visible.
+    public var pollingEnabled = true {
+        didSet { if pollingEnabled != oldValue { updateLoop() } }
+    }
 
     /// Whether the polling loop is running.
     public var isPolling: Bool { loop != nil }
@@ -54,7 +59,7 @@ public final class PrinterMonitor {
     }
 
     private func updateLoop() {
-        let shouldRun = visibleCount > 0 && !paused
+        let shouldRun = visibleCount > 0 && !paused && pollingEnabled
         if shouldRun, loop == nil {
             loop = Task { [weak self] in
                 while !Task.isCancelled {

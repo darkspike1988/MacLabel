@@ -3,10 +3,11 @@ import LabelTransport
 @testable import MacLabelApp
 
 @MainActor
-func makeViewModel(printers: [DiscoveredPrinter], remembered: String?, blockFrom: Int? = nil, maxPages: Int = 1) -> AppModel {
+func makeViewModel(printers: [DiscoveredPrinter], remembered: String?, blockFrom: Int? = nil, maxPages: Int = 1,
+                    defaults: UserDefaults = UserDefaults(suiteName: UUID().uuidString)!) -> AppModel {
     let factory = AppStubFactory(list: printers, blockFrom: blockFrom)
     let printer = LabelPrinter(factory: factory, preferences: appPrefs(remembered: remembered), formFeedClock: AppNoStampClock())
-    return AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: maxPages))
+    return AppModel(printer: printer, preview: PreviewEngine(debounce: .zero, maxPages: maxPages), defaults: defaults)
 }
 
 @MainActor

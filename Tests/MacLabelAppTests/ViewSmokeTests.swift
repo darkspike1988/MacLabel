@@ -334,7 +334,7 @@ private func makeWindow(_ model: AppModel, appearance: NSAppearance.Name) -> NSW
 
 /// An offscreen window (never ordered in) hosting `root`.
 @MainActor
-private func makeWindow(_ root: some View, size: CGSize, appearance: NSAppearance.Name) -> NSWindow {
+func makeWindow(_ root: some View, size: CGSize, appearance: NSAppearance.Name) -> NSWindow {
     _ = NSApplication.shared
     let window = NSWindow(
         contentRect: CGRect(origin: .zero, size: size),
@@ -350,7 +350,7 @@ private func makeWindow(_ root: some View, size: CGSize, appearance: NSAppearanc
 }
 
 @MainActor
-private func snapshot(of view: NSView) throws -> NSBitmapImageRep {
+func snapshot(of view: NSView) throws -> NSBitmapImageRep {
     view.layoutSubtreeIfNeeded()
     let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
     view.cacheDisplay(in: view.bounds, to: rep)
@@ -369,7 +369,7 @@ private func hasBlackPixel(_ rep: NSBitmapImageRep, inRight fraction: Double) ->
     return false
 }
 
-private func distinctColors(_ rep: NSBitmapImageRep) -> Int {
+func distinctColors(_ rep: NSBitmapImageRep) -> Int {
     var seen = Set<UInt32>()
     let stepX = max(1, rep.pixelsWide / 60), stepY = max(1, rep.pixelsHigh / 60)
     for y in stride(from: 0, to: rep.pixelsHigh, by: stepY) {
@@ -384,7 +384,7 @@ private func distinctColors(_ rep: NSBitmapImageRep) -> Int {
 }
 
 /// Writes a PNG only when `MACLABEL_SNAPSHOTS=1` (directory: `MACLABEL_SNAPSHOTS_DIR` or the temp dir).
-private func saveIfRequested(_ rep: NSBitmapImageRep, name: String) throws {
+func saveIfRequested(_ rep: NSBitmapImageRep, name: String) throws {
     let env = ProcessInfo.processInfo.environment
     guard env["MACLABEL_SNAPSHOTS"] == "1" else { return }
     let dir = URL(fileURLWithPath: env["MACLABEL_SNAPSHOTS_DIR"] ?? NSTemporaryDirectory())

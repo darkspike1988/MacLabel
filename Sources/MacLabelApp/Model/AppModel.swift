@@ -66,12 +66,31 @@ public final class AppModel {
 
     private static let fallbackModel = PrinterModel.lookup(productID: 0x20)!
 
-    public init(printer: LabelPrinter = .shared, preview: PreviewEngine = PreviewEngine()) {
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private var settingsObserver: (any NSObjectProtocol)?
+
+    public init(printer: LabelPrinter = .shared, preview: PreviewEngine = PreviewEngine(), defaults: UserDefaults = .standard) {
         self.printer = printer
         self.preview = preview
+        self.defaults = defaults
         self.monitor = PrinterMonitor(printer: printer)
         monitor.rediscover = { [weak self] in await self?.refreshPrinters() }
         schedulePreview()
+        applySettings()
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: defaults, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.applySettings() }
+        }
+    }
+
+    /// Applies the Settings: status polling on/off and the default printer.
+    func applySettings() {
+        let settings = AppSettings(defaults: defaults)
+        monitor.pollingEnabled = settings.statusPolling
+        guard let serial = settings.defaultPrinterSerial, selectedPrinter?.serialNumber != serial,
+              let wanted = printers.first(where: { $0.serialNumber == serial }) else { return }
+        selectedPrinter = wanted
     }
 
     /// Imports the first supported file of a drop or file choice. A newer import cancels the one in flight.
@@ -100,7 +119,9 @@ public final class AppModel {
         if let current = selectedPrinter, let same = list.first(where: { Self.key($0) == Self.key(current) }) {
             if same != current { selectedPrinter = same }
         } else {
-            selectedPrinter = list.first { $0.model.family == .lwClassic } ?? list.first
+            let preferred = AppSettings(defaults: defaults).defaultPrinterSerial
+            selectedPrinter = list.first { preferred != nil && $0.serialNumber == preferred }
+                ?? list.first { $0.model.family == .lwClassic } ?? list.first
         }
         await rollTask?.value
     }
@@ -124,6 +145,11 @@ public final class AppModel {
 
     /// Prints the whole series on the selected printer. Returns when the print ended.
     public func print(allowOverflow: Bool) async {
+        await print(document: document, allowOverflow: allowOverflow)
+    }
+
+    /// Prints `document` (the window's, or the menu bar panel's text) on the selected printer.
+    public func print(document: LabelDocument, allowOverflow: Bool) async {
         guard printTask == nil else { return }
         guard let target = selectedPrinter else {
             printPhase = .failed(PrinterSelectionError.noPrinter.localizedDescription)
@@ -235,11 +261,16 @@ public final class AppModel {
         printer.serialNumber.map { "sn:\($0)" } ?? "id:\(printer.id)"
     }
 
+    /// The selected LW-Classic model, or the LabelWriter 450 for previews without a printer.
+    var effectiveModel: PrinterModel {
+        selectedPrinter.flatMap { $0.model.family == .lwClassic ? $0.model : nil } ?? Self.fallbackModel
+    }
+
     private func schedulePreview() {
         previewTask?.cancel()
         let document = document
         let roll = roll
-        let model = selectedPrinter.flatMap { $0.model.family == .lwClassic ? $0.model : nil } ?? Self.fallbackModel
+        let model = effectiveModel
         previewTask = Task { [weak self, preview] in
             let result = await preview.update(document: document, roll: roll, model: model) { first in
                 self?.showPreview(first, final: false)

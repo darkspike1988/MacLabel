@@ -9,8 +9,11 @@ public struct PreviewResult: Sendable {
     public let totalLabels: Int
     public let overflowIndices: [Int]
     public let error: String?
+    /// The error is the missing roll (as opposed to a problem with the content).
+    public let missingRoll: Bool
 
-    public init(pages: [RenderResult], totalLabels: Int, overflowIndices: [Int], error: String?) {
+    public init(pages: [RenderResult], totalLabels: Int, overflowIndices: [Int], error: String?, missingRoll: Bool = false) {
+        self.missingRoll = missingRoll
         self.pages = pages
         self.totalLabels = totalLabels
         self.overflowIndices = overflowIndices
@@ -68,11 +71,11 @@ public final class PreviewEngine {
     // capped set equals the one chosen for the full series (Ruling A12).
     private nonisolated static func render(document: LabelDocument, roll: LabelRoll?, model: PrinterModel, limit: Int) -> PreviewResult {
         let total = (try? document.labelCount()) ?? 0
-        func failure(_ message: String) -> PreviewResult {
-            PreviewResult(pages: [], totalLabels: total, overflowIndices: [], error: message)
+        func failure(_ message: String, missingRoll: Bool = false) -> PreviewResult {
+            PreviewResult(pages: [], totalLabels: total, overflowIndices: [], error: message, missingRoll: missingRoll)
         }
         guard let roll else {
-            return failure(String(localized: "No roll selected.", bundle: L10n.bundle))
+            return failure(String(localized: "No roll selected.", bundle: L10n.bundle), missingRoll: true)
         }
         do {
             let request = PrintRequest(
