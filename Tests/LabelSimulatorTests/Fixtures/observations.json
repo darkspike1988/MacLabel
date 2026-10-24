@@ -1,0 +1,29 @@
+{
+  "note": "Echte Drucke auf LabelWriter 450 (FW f0J), Rolle 11354/S0722540, 24.10.2026. Reihenfolge = Druckreihenfolge. pauseBefore = Sekunden seit Ende des vorigen Auftrags (geschätzt; 'long' = mehrere Minuten). transport: cli = MacLabel-CLI (ESC A vor dem Auftrag und nach jedem Label, vor ESC G/ESC E), raw = Bytes ohne Statusabfragen, poll = Bytes plus ESC A alle 250 ms während des Drucks. observed: Beobachtung des Auftraggebers bzw. Foto-Messung (mm = Versatz nach unten ggü. Soll).",
+  "jobs": [
+    {"id": "test1",  "file": "test1.bin",            "pauseBefore": "long", "transport": "cli",  "labels": 1, "observed": ["ok (Text mittig, Feinversatz nicht beurteilbar)"]},
+    {"id": "step4",  "file": "step4.bin",            "pauseBefore": "long", "transport": "cli",  "labels": 1, "observed": ["unklar: 'QR abgeschnitten unten oder sehr knapp bei fast allen'"]},
+    {"id": "step5",  "file": "step5.bin",            "pauseBefore": 3,      "transport": "cli",  "labels": 1, "observed": ["Ziffern unten abgeschnitten"]},
+    {"id": "step6",  "file": "step6.bin",            "pauseBefore": 3,      "transport": "cli",  "labels": 2, "observed": ["keine Aussage"]},
+    {"id": "step7",  "file": "step7.bin",            "pauseBefore": 3,      "transport": "cli",  "labels": 2, "observed": ["Label 1 abgeschnitten/knapp", "Label 2 Position ok"]},
+    {"id": "step8",  "file": null,                   "pauseBefore": 3,      "transport": "cli",  "labels": 2, "observed": ["zwei Text-Aufträge direkt hintereinander, keine Aussage"]},
+    {"id": "A",      "file": "step4.bin",            "pauseBefore": "long", "transport": "raw",  "labels": 1, "observed": ["gut (nicht abgeschnitten)"]},
+    {"id": "B",      "file": "step4_noskip.bin",     "pauseBefore": 5,      "transport": "raw",  "labels": 1, "observed": ["abgeschnitten"]},
+    {"id": "C",      "file": "step4.bin",            "pauseBefore": "long", "transport": "poll", "labels": 1, "observed": ["abgeschnitten; Foto IMG_5318: QR von Oberkante (Rand ~1 mm) bis Unterkante"]},
+    {"id": "ruler",  "file": "ruler_graphics_2.bin", "pauseBefore": "long", "transport": "raw",  "labels": 2, "observed": ["Foto IMG_5318: beide Lineale vollständig, letzter Strich ~0,9 mm vor Unterkante (Soll 1,1 mm)"]},
+    {"id": "rulerT", "file": "ruler_text_1.bin",     "pauseBefore": 6,      "transport": "raw",  "labels": 1, "observed": ["Foto: teilweise im Drucker, nicht beurteilbar"]},
+    {"id": "allsyn", "file": "step4_allsyn.bin",     "pauseBefore": "long", "transport": "raw",  "labels": 1, "observed": ["'passt'; Foto IMG_5319: Rand oben ~4,4 mm, unten ~1,9 mm (Soll 3,6/3,6) → ~+0,8 mm"]},
+    {"id": "fix4",   "file": "fix4.bin",             "pauseBefore": "long", "transport": "cli",  "labels": 1, "observed": ["Foto IMG_5319: Rand oben ~5,7 mm, unten ~0 → ~+2 mm"]},
+    {"id": "ean",    "file": "e.bin",                "pauseBefore": 2,      "transport": "cli",  "labels": 1, "observed": ["Foto IMG_5319: Striche beginnen ~6,3 mm (Soll 1,5) → ~+4,8 mm, Ziffern abgeschnitten"]},
+    {"id": "L1",     "file": "q_L.bin",              "pauseBefore": "long", "transport": "raw",  "labels": 1, "observed": ["'wie vorher, keine Veränderung'"]},
+    {"id": "L2",     "file": "q_L.bin",              "pauseBefore": 0,      "transport": "raw",  "labels": 1, "observed": ["'wie vorher'"]},
+    {"id": "L3",     "file": "e_L.bin",              "pauseBefore": 0,      "transport": "raw",  "labels": 1, "observed": ["'wie vorher'"]},
+    {"id": "hE1",    "file": "q_hE.bin",             "pauseBefore": "long", "transport": "raw",  "labels": 1, "observed": ["deutlich zu tief, nicht abgeschnitten"]},
+    {"id": "hE2",    "file": "q_hE.bin",             "pauseBefore": 0,      "transport": "raw",  "labels": 1, "observed": ["abgeschnitten"]},
+    {"id": "hE3",    "file": "e_hE.bin",             "pauseBefore": 0,      "transport": "raw",  "labels": 1, "observed": ["Ziffern unten, nicht abgeschnitten"]},
+    {"id": "fix1",   "file": "fix4.bin",             "pauseBefore": "long", "transport": "cli",  "labels": 1, "observed": ["vermutlich ok (nur Fix 2 bemängelt)"]},
+    {"id": "fix2",   "file": "fix4.bin",             "pauseBefore": 0,      "transport": "cli",  "labels": 1, "observed": ["passt nicht genau"]},
+    {"id": "fix3a",  "file": "fix4.bin",             "pauseBefore": "long", "transport": "cli",  "labels": 1, "observed": ["nicht mittig"]},
+    {"id": "fix3b",  "file": "fix4.bin",             "pauseBefore": 1.7,    "transport": "cli",  "labels": 1, "observed": ["abgeschnitten"]}
+  ]
+}

@@ -254,3 +254,13 @@ Signiertes Test-App-Bundle (ad-hoc) mit `com.apple.security.app-sandbox` + `com.
 **Ursache [I, konsistent mit allen Beobachtungen]:** MacLabel startete den nächsten Auftrag, sobald der Status „bereit“ (`0x01`) lautete, während das vorherige Etikett noch zur Abreißkante lief. DYMO wartet auf Top-of-Form.
 
 **Korrektur:** `PrintService.print` wartet bei Stanzetiketten vor dem Auftragskopf, bis das Top-of-Form-Bit gesetzt ist (Abfrage alle 100 ms, höchstens 10 s, sonst `printerNotReady`). Endlosrollen warten nicht. Am Gerät noch nicht durch einen Druck verifiziert, weil der Auftraggeber keine weiteren Testdrucke wünscht.
+
+## 14. Vollständiges USB-Auslesen (24.10.2026, nur lesend)
+
+- Device-Deskriptor: bcdUSB 0x0200, Klasse 0, bMaxPacketSize0 64, VID 0x0922, PID 0x0020, **bcdDevice 0x0112**, Strings 1/2/3, eine Konfiguration.
+- Konfiguration (32 Byte, roh): `09 02 20 00 01 01 00 C0 01 | 09 04 00 00 02 07 01 02 00 | 07 05 82 02 40 00 00 | 07 05 02 02 40 00 00`, also selbstversorgt (0xC0), 2 mA, Interface 0 Klasse 7/1/2, Bulk IN 0x82 und OUT 0x02 mit je 64 Byte.
+- IEEE-1284-Device-ID (Klassen-Request 0xA1/0): `MFG:DYMO;CMD: ;MDL:LabelWriter 450;CLASS:PRINTER;DESCRIPTION:DYMO LabelWriter 450;SERN:01010112345600;`. Die Seriennummer dort ist der Platzhalter, nicht die USB-Seriennummer.
+- Strings: „DYMO“, „DYMO LabelWriter 450“, „17102102351327“.
+- GET_PORT_STATUS (0xA1/1): `0x18` (not error + select, Papier vorhanden).
+- `ESC A` → `03`, `ESC V` → `1750111f0J`.
+- Firmware-Auslesen: Dafür gibt es keinen Befehl, und auf dem Mac liegt keine LW450-Firmware (DYMO Connect bietet Firmware-Updates nur für LW5xx/LM640).
