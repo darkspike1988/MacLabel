@@ -31,6 +31,8 @@
   - Render-Debounce 100 ms; ein neuer Auftrag bricht den alten ab.
   - Höchstens die ersten 50 Etiketten einer Serie werden gerendert.
 - **Texte:** Nutzertexte de/en über einen String Catalog in `MacLabelApp`. Sprachwahl wie `MacLabelKit.localizedBundle(preferred:)`.
+- **Gestaltung:** strikt nach Apples Human Interface Guidelines für macOS 26 (native Controls, Toolbar, Inspector, Settings-Scene, Menüleisten-Extra, SF Symbols, Systemfarben, Liquid-Glass-Materialien wo vom System vorgesehen, Tastaturkürzel, VoiceOver, Dynamic Type wo verfügbar, hell/dunkel). Vor jeder View-Arbeit Skill `swiftui-pro` laden und befolgen.
+- **Druckpausen:** Zwischen zwei getrennten Druckvorgängen hält `LabelPrinter` die `JobSpacing`-Mindestpause ein; die UI zeigt währenddessen „Drucker positioniert das Etikett …“ mit Fortschritt statt zu hängen.
 - **Debug-Haken:** `MACLABEL_FAKE_PRINTER=<Pfad>` nur unter `#if DEBUG`.
 - **Commits** enden mit dem Co-Authored-By-Trailer des schreibenden Modells.
 
@@ -140,7 +142,7 @@ docs/app-checklist.md
     - `public func availablePrinters() -> [DiscoveredPrinter]`
     - `public func state(for printer: DiscoveredPrinter?) async -> PrinterState`: öffnen, `status()`, schließen. `.busy` bei `TransportError.busy`. Kein Drucker → `.noPrinter`. Nicht unterstütztes Modell → `.unsupported(name)`.
     - `public func rememberedRoll(for printer: DiscoveredPrinter) -> LabelRoll?`, `public func remember(_ roll: LabelRoll, for printer: DiscoveredPrinter)`
-    - `public func print(_ request: PrintRequest, on printer: DiscoveredPrinter, progress: @escaping @Sendable (Int, Int) -> Void) async throws`: öffnen, `PrintService.print`, schließen (auch bei Fehler/Abbruch), danach `remember`.
+    - `public func print(_ request: PrintRequest, on printer: DiscoveredPrinter, progress: @escaping @Sendable (Int, Int) -> Void) async throws`: öffnen, `PrintService.print(…, spacing: JobSpacing(clock: formFeedClock, serial: printer.serialNumber))`, schließen (auch bei Fehler/Abbruch), danach `remember`. `LabelPrinter.init` bekommt zusätzlich `formFeedClock: any FormFeedClock = UserDefaultsFormFeedClock.standard()` (Mindestpause nach `ESC E`, `JobSpacing` in MacLabelKit, vorläufig 10 s). Alle Etiketten eines Druckvorgangs (Kopien, Serie) gehen in **einen** `PrintRequest`/Auftrag.
 
 - [ ] **Step 1: Failing tests** (mit einem Test-`TransportFactory`, der `ScriptedTransport`-artig Status liefert)
 ```swift
